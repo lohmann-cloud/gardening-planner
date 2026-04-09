@@ -17,6 +17,9 @@
     },
     {
       "path": "./apps/frontend"
+    },
+    {
+      "path": "./libs/database"
     }
   ]
 }
