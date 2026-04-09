@@ -51,3 +51,11 @@ Thumbs.db
 __screenshots__/
 
 test-output
+
+# Environment files
+.env
+.env.production
+.env.local
+
+# Prisma generated client
+libs/database/src/generated/

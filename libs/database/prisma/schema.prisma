@@ -1,0 +1,233 @@
+// Prisma schema for Garden Planner
+// Docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Users & Auth
+// ---------------------------------------------------------------------------
+
+model User {
+  id          String   @id @default(uuid())
+  googleId    String   @unique
+  email       String   @unique
+  displayName String?
+  avatarUrl   String?
+  createdAt   DateTime @default(now())
+
+  gardenMembers GardenMember[]
+  seedInventory SeedInventory[]
+  customPlants  Plant[]
+}
+
+// ---------------------------------------------------------------------------
+// Gardens
+// ---------------------------------------------------------------------------
+
+model Garden {
+  id              String   @id @default(uuid())
+  name            String
+  description     String?
+  widthM          Float
+  lengthM         Float
+  gridResolutionM Float    @default(0.5)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  members   GardenMember[]
+  obstacles Obstacle[]
+  beds      GardenBed[]
+}
+
+model GardenMember {
+  gardenId String
+  userId   String
+  role     Role     @default(COLLABORATOR)
+  joinedAt DateTime @default(now())
+
+  garden Garden @relation(fields: [gardenId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([gardenId, userId])
+}
+
+enum Role {
+  OWNER
+  COLLABORATOR
+  VIEWER
+}
+
+// ---------------------------------------------------------------------------
+// Layout: Obstacles & Beds
+// ---------------------------------------------------------------------------
+
+model Obstacle {
+  id       String @id @default(uuid())
+  gardenId String
+  label    String
+  xM       Float
+  yM       Float
+  widthM   Float
+  lengthM  Float
+
+  garden Garden @relation(fields: [gardenId], references: [id], onDelete: Cascade)
+}
+
+model GardenBed {
+  id        String   @id @default(uuid())
+  gardenId  String
+  name      String
+  xM        Float
+  yM        Float
+  widthM    Float
+  lengthM   Float
+  createdAt DateTime @default(now())
+
+  garden        Garden         @relation(fields: [gardenId], references: [id], onDelete: Cascade)
+  plantingPlans PlantingPlan[]
+}
+
+// ---------------------------------------------------------------------------
+// Plant Catalog
+// ---------------------------------------------------------------------------
+
+model RotationGroup {
+  id          String  @id @default(uuid())
+  name        String  @unique
+  description String?
+
+  followedById String?
+  followedBy   RotationGroup?  @relation("RotationOrder", fields: [followedById], references: [id])
+  precedes     RotationGroup[] @relation("RotationOrder")
+
+  plants Plant[]
+}
+
+model Plant {
+  id               String    @id @default(uuid())
+  name             String
+  scientificName   String?
+  category         Category
+  seasons          Season[]
+  sunRequirement   Sun
+  waterRequirement Water
+  spacingCm        Int
+  daysToMaturity   Int?
+  fertilizationNotes String?
+  isCustom         Boolean   @default(false)
+  createdByUserId  String?
+
+  rotationGroupId String?
+  rotationGroup   RotationGroup? @relation(fields: [rotationGroupId], references: [id])
+  createdBy       User?          @relation(fields: [createdByUserId], references: [id])
+
+  companionRules    CompanionRule[] @relation("PlantCompanions")
+  companionOf       CompanionRule[] @relation("CompanionOf")
+  seedInventory     SeedInventory[]
+  plantingCells     PlantingCell[]
+}
+
+model CompanionRule {
+  id               String       @id @default(uuid())
+  plantId          String
+  companionPlantId String
+  relationship     Relationship
+  notes            String?
+
+  plant          Plant @relation("PlantCompanions", fields: [plantId], references: [id], onDelete: Cascade)
+  companionPlant Plant @relation("CompanionOf", fields: [companionPlantId], references: [id], onDelete: Cascade)
+
+  @@unique([plantId, companionPlantId])
+}
+
+enum Category {
+  VEGETABLE
+  FRUIT
+  HERB
+  FLOWER
+  TREE
+  SHRUB
+}
+
+enum Season {
+  SPRING
+  SUMMER
+  AUTUMN
+  WINTER
+}
+
+enum Sun {
+  FULL_SUN
+  PARTIAL_SHADE
+  FULL_SHADE
+}
+
+enum Water {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum Relationship {
+  BENEFICIAL
+  INCOMPATIBLE
+}
+
+// ---------------------------------------------------------------------------
+// Seed Inventory
+// ---------------------------------------------------------------------------
+
+model SeedInventory {
+  id             String    @id @default(uuid())
+  userId         String
+  plantId        String
+  quantity       Int?
+  purchasedAt    DateTime?
+  bestBeforeYear Int?
+  notes          String?
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plant Plant @relation(fields: [plantId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, plantId])
+}
+
+// ---------------------------------------------------------------------------
+// Planting Plans
+// ---------------------------------------------------------------------------
+
+model PlantingPlan {
+  id          String   @id @default(uuid())
+  gardenBedId String
+  year        Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  bed   GardenBed      @relation(fields: [gardenBedId], references: [id], onDelete: Cascade)
+  cells PlantingCell[]
+
+  @@unique([gardenBedId, year])
+}
+
+model PlantingCell {
+  id             String    @id @default(uuid())
+  plantingPlanId String
+  plantId        String
+  col            Int
+  row            Int
+  plantedAt      DateTime?
+  notes          String?
+
+  plantingPlan PlantingPlan @relation(fields: [plantingPlanId], references: [id], onDelete: Cascade)
+  plant        Plant        @relation(fields: [plantId], references: [id], onDelete: Cascade)
+
+  @@unique([plantingPlanId, col, row])
+}
