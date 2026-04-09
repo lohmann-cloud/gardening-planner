@@ -6,9 +6,9 @@
     "db:up": "docker compose up -d",
     "db:down": "docker compose down",
     "db:reset": "docker compose down -v && docker compose up -d",
-    "prisma:generate": "prisma generate --schema=libs/database/prisma/schema.prisma",
-    "prisma:migrate": "prisma migrate dev --schema=libs/database/prisma/schema.prisma",
-    "prisma:studio": "prisma studio --schema=libs/database/prisma/schema.prisma"
+    "prisma:generate": "prisma generate --config=libs/database/prisma/prisma.config.ts",
+    "prisma:migrate": "prisma migrate dev --config=libs/database/prisma/prisma.config.ts",
+    "prisma:studio": "prisma studio --config=libs/database/prisma/prisma.config.ts"
   },
   "private": true,
   "devDependencies": {
@@ -38,6 +38,7 @@
     "@swc/core": "1.15.8",
     "@swc/helpers": "0.5.18",
     "@types/node": "20.19.9",
+    "@types/pg": "^8.20.0",
     "@typescript-eslint/utils": "^8.40.0",
     "angular-eslint": "^21.2.0",
     "eslint": "^9.8.0",
@@ -70,8 +71,11 @@
     "@nestjs/config": "^4.0.3",
     "@nestjs/core": "^11.0.0",
     "@nestjs/platform-express": "^11.0.0",
+    "@prisma/adapter-pg": "^7.7.0",
     "@prisma/client": "^7.7.0",
     "axios": "^1.6.0",
+    "dotenv": "^17.4.1",
+    "pg": "^8.20.0",
     "reflect-metadata": "^0.1.13",
     "rxjs": "~7.8.0"
   }
