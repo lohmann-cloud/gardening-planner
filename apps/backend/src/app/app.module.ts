@@ -5,10 +5,7 @@ import { AppService } from './app.service';
 import { DatabaseModule } from '@org/database';
 
 @Module({
-  imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
-    DatabaseModule,
-  ],
+  imports: [ConfigModule.forRoot({ isGlobal: true }), DatabaseModule],
   controllers: [AppController],
   providers: [AppService],
 })
