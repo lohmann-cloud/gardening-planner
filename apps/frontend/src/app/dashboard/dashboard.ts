@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { ApiService, Garden } from '../services/api.service';
@@ -97,14 +97,20 @@ import { ApiService, Garden } from '../services/api.service';
 export class DashboardComponent implements OnInit {
   gardens: Garden[] = [];
 
-  constructor(private api: ApiService) {}
+  constructor(private api: ApiService, private cdr: ChangeDetectorRef) {}
 
   ngOnInit() {
     this.load();
   }
 
   load() {
-    this.api.getGardens().subscribe((g) => (this.gardens = g));
+    this.api.getGardens().subscribe({
+      next: (g) => {
+        this.gardens = g;
+        this.cdr.markForCheck();
+      },
+      error: (err) => console.error('Failed to load gardens:', err),
+    });
   }
 
   deleteGarden(g: Garden, event: Event) {

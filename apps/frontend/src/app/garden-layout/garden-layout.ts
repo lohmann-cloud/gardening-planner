@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterModule } from '@angular/router';
@@ -276,7 +276,11 @@ export class GardenLayoutComponent implements OnInit {
   newBed = { name: 'Bed', widthM: 2, lengthM: 1 };
   newObstacle = { label: 'Shed', widthM: 2, lengthM: 2 };
 
-  constructor(private api: ApiService, private route: ActivatedRoute) {}
+  constructor(
+    private api: ApiService,
+    private route: ActivatedRoute,
+    private cdr: ChangeDetectorRef,
+  ) {}
 
   ngOnInit() {
     const id = this.route.snapshot.paramMap.get('id')!;
@@ -287,6 +291,7 @@ export class GardenLayoutComponent implements OnInit {
     this.api.getGarden(id).subscribe((g) => {
       this.garden = g;
       this.buildGrid();
+      this.cdr.markForCheck();
     });
   }
 
