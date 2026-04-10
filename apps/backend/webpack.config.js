@@ -18,9 +18,7 @@ module.exports = {
     function ({ request }, callback) {
       // Keep optional NestJS peer dependencies external
       if (
-        /^@nestjs\/(microservices|websockets|platform-socket\.io)/.test(
-          request
-        )
+        /^@nestjs\/(microservices|websockets|platform-socket\.io)/.test(request)
       ) {
         return callback(null, 'commonjs ' + request);
       }

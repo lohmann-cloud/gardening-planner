@@ -1,231 +1,199 @@
 @if (garden(); as g) {
-  <div class="layout-page">
-    <header class="layout-header">
-      <a routerLink="/" class="back">&larr; Gardens</a>
-      <h1>{{ g.name }}</h1>
-      <span class="dims">{{ g.widthM }}m &times; {{ g.lengthM }}m</span>
-    </header>
+<div class="layout-page">
+  <header class="layout-header">
+    <a routerLink="/" class="back">&larr; Gardens</a>
+    <h1>{{ g.name }}</h1>
+    <span class="dims">{{ g.widthM }}m &times; {{ g.lengthM }}m</span>
+  </header>
 
-    <div class="layout-body">
-      <!-- Toolbar -->
-      <aside class="toolbar">
-        <h3>Tools</h3>
-        <button
-          [class.active]="tool() === 'select'"
-          (click)="tool.set('select')"
-        >
-          &#9754; Select
-        </button>
-        <button
-          [class.active]="tool() === 'bed'"
-          (click)="tool.set('bed')"
-        >
-          &#9744; Add Bed
-        </button>
-        <button
-          [class.active]="tool() === 'obstacle'"
-          (click)="tool.set('obstacle')"
-        >
-          &#9632; Add Obstacle
-        </button>
+  <div class="layout-body">
+    <!-- Toolbar -->
+    <aside class="toolbar">
+      <h3>Tools</h3>
+      <button [class.active]="tool() === 'select'" (click)="tool.set('select')">
+        &#9754; Select
+      </button>
+      <button [class.active]="tool() === 'bed'" (click)="tool.set('bed')">
+        &#9744; Add Bed
+      </button>
+      <button
+        [class.active]="tool() === 'obstacle'"
+        (click)="tool.set('obstacle')"
+      >
+        &#9632; Add Obstacle
+      </button>
 
-        <hr />
+      <hr />
 
-        @switch (tool()) {
-          @case ('bed') {
-            <div class="tool-form">
-              <h4>New Bed</h4>
-              <label>
-                Name
-                <input type="text" [formField]="bedForm.name" />
-              </label>
-              <label>
-                Width (m)
-                <input
-                  type="number"
-                  [formField]="bedForm.widthM"
-                  step="0.5"
-                />
-              </label>
-              <label>
-                Length (m)
-                <input
-                  type="number"
-                  [formField]="bedForm.lengthM"
-                  step="0.5"
-                />
-              </label>
-              <p class="hint">Click on the grid to place</p>
-            </div>
-          }
-          @case ('obstacle') {
-            <div class="tool-form">
-              <h4>New Obstacle</h4>
-              <label>
-                Label
-                <input type="text" [formField]="obstacleForm.label" />
-              </label>
-              <label>
-                Width (m)
-                <input
-                  type="number"
-                  [formField]="obstacleForm.widthM"
-                  step="0.5"
-                />
-              </label>
-              <label>
-                Length (m)
-                <input
-                  type="number"
-                  [formField]="obstacleForm.lengthM"
-                  step="0.5"
-                />
-              </label>
-              <p class="hint">Click on the grid to place</p>
-            </div>
-          }
-          @case ('select') {
-            @if (selectedBed(); as bed) {
-              <div class="tool-form">
-                <h4>Bed: {{ bed.name }}</h4>
-                <p>{{ bed.widthM }}m &times; {{ bed.lengthM }}m</p>
-                <p>Position: ({{ bed.xM }}, {{ bed.yM }})</p>
-                <button class="btn-danger" (click)="deleteBed(bed)">
-                  Delete Bed
-                </button>
-              </div>
-            }
-            @if (selectedObstacle(); as obs) {
-              <div class="tool-form">
-                <h4>Obstacle: {{ obs.label }}</h4>
-                <p>{{ obs.widthM }}m &times; {{ obs.lengthM }}m</p>
-                <button class="btn-danger" (click)="deleteObstacle(obs)">
-                  Delete Obstacle
-                </button>
-              </div>
-            }
-          }
+      @switch (tool()) { @case ('bed') {
+      <div class="tool-form">
+        <h4>New Bed</h4>
+        <label>
+          Name
+          <input type="text" [formField]="bedForm.name" />
+        </label>
+        <label>
+          Width (m)
+          <input type="number" [formField]="bedForm.widthM" step="0.5" />
+        </label>
+        <label>
+          Length (m)
+          <input type="number" [formField]="bedForm.lengthM" step="0.5" />
+        </label>
+        <p class="hint">Click on the grid to place</p>
+      </div>
+      } @case ('obstacle') {
+      <div class="tool-form">
+        <h4>New Obstacle</h4>
+        <label>
+          Label
+          <input type="text" [formField]="obstacleForm.label" />
+        </label>
+        <label>
+          Width (m)
+          <input type="number" [formField]="obstacleForm.widthM" step="0.5" />
+        </label>
+        <label>
+          Length (m)
+          <input type="number" [formField]="obstacleForm.lengthM" step="0.5" />
+        </label>
+        <p class="hint">Click on the grid to place</p>
+      </div>
+      } @case ('select') { @if (selectedBed(); as bed) {
+      <div class="tool-form">
+        <h4>Bed: {{ bed.name }}</h4>
+        <p>{{ bed.widthM }}m &times; {{ bed.lengthM }}m</p>
+        <p>Position: ({{ bed.xM }}, {{ bed.yM }})</p>
+        <button class="btn-danger" (click)="deleteBed(bed)">Delete Bed</button>
+      </div>
+      } @if (selectedObstacle(); as obs) {
+      <div class="tool-form">
+        <h4>Obstacle: {{ obs.label }}</h4>
+        <p>{{ obs.widthM }}m &times; {{ obs.lengthM }}m</p>
+        <button class="btn-danger" (click)="deleteObstacle(obs)">
+          Delete Obstacle
+        </button>
+      </div>
+      } } }
+    </aside>
+
+    <!-- Canvas -->
+    <div class="canvas-container">
+      <svg
+        class="garden-canvas"
+        [attr.viewBox]="'0 0 ' + g.widthM + ' ' + g.lengthM"
+        preserveAspectRatio="xMidYMid meet"
+        (click)="onCanvasClick($event)"
+        (mousemove)="onCanvasMove($event)"
+      >
+        <!-- Background -->
+        <rect
+          [attr.width]="g.widthM"
+          [attr.height]="g.lengthM"
+          fill="#e8f5e9"
+        />
+
+        <!-- Grid lines -->
+        @for (x of gridLinesX(); track x) {
+        <line
+          [attr.x1]="x"
+          y1="0"
+          [attr.x2]="x"
+          [attr.y2]="g.lengthM"
+          stroke="#c8e6c9"
+          stroke-width="0.02"
+        />
+        } @for (y of gridLinesY(); track y) {
+        <line
+          x1="0"
+          [attr.y1]="y"
+          [attr.x2]="g.widthM"
+          [attr.y2]="y"
+          stroke="#c8e6c9"
+          stroke-width="0.02"
+        />
         }
-      </aside>
 
-      <!-- Canvas -->
-      <div class="canvas-container">
-        <svg
-          class="garden-canvas"
-          [attr.viewBox]="'0 0 ' + g.widthM + ' ' + g.lengthM"
-          preserveAspectRatio="xMidYMid meet"
-          (click)="onCanvasClick($event)"
-          (mousemove)="onCanvasMove($event)"
-        >
-          <!-- Background -->
+        <!-- Obstacles -->
+        @for (o of g.obstacles; track o.id) {
+        <g (click)="selectObstacle(o, $event)" class="clickable">
           <rect
-            [attr.width]="g.widthM"
-            [attr.height]="g.lengthM"
-            fill="#e8f5e9"
-          />
-
-          <!-- Grid lines -->
-          @for (x of gridLinesX(); track x) {
-            <line
-              [attr.x1]="x"
-              y1="0"
-              [attr.x2]="x"
-              [attr.y2]="g.lengthM"
-              stroke="#c8e6c9"
-              stroke-width="0.02"
-            />
-          }
-          @for (y of gridLinesY(); track y) {
-            <line
-              x1="0"
-              [attr.y1]="y"
-              [attr.x2]="g.widthM"
-              [attr.y2]="y"
-              stroke="#c8e6c9"
-              stroke-width="0.02"
-            />
-          }
-
-          <!-- Obstacles -->
-          @for (o of g.obstacles; track o.id) {
-            <g (click)="selectObstacle(o, $event)" class="clickable">
-              <rect
-                [attr.x]="o.xM"
-                [attr.y]="o.yM"
-                [attr.width]="o.widthM"
-                [attr.height]="o.lengthM"
-                fill="#bdbdbd"
-                stroke="#757575"
-                [attr.stroke-width]="
+            [attr.x]="o.xM"
+            [attr.y]="o.yM"
+            [attr.width]="o.widthM"
+            [attr.height]="o.lengthM"
+            fill="#bdbdbd"
+            stroke="#757575"
+            [attr.stroke-width]="
                   selectedObstacle()?.id === o.id ? 0.06 : 0.03
                 "
-                [attr.stroke-dasharray]="
+            [attr.stroke-dasharray]="
                   selectedObstacle()?.id === o.id ? '0.1 0.05' : 'none'
                 "
-              />
-              <text
-                [attr.x]="o.xM + o.widthM / 2"
-                [attr.y]="o.yM + o.lengthM / 2"
-                text-anchor="middle"
-                dominant-baseline="central"
-                [attr.font-size]="Math.min(o.widthM, o.lengthM) * 0.3"
-                fill="#424242"
-              >
-                {{ o.label }}
-              </text>
-            </g>
-          }
+          />
+          <text
+            [attr.x]="o.xM + o.widthM / 2"
+            [attr.y]="o.yM + o.lengthM / 2"
+            text-anchor="middle"
+            dominant-baseline="central"
+            [attr.font-size]="Math.min(o.widthM, o.lengthM) * 0.3"
+            fill="#424242"
+          >
+            {{ o.label }}
+          </text>
+        </g>
+        }
 
-          <!-- Beds -->
-          @for (b of g.beds; track b.id) {
-            <g (click)="selectBed(b, $event)" class="clickable">
-              <rect
-                [attr.x]="b.xM"
-                [attr.y]="b.yM"
-                [attr.width]="b.widthM"
-                [attr.height]="b.lengthM"
-                fill="#a5d6a7"
-                stroke="#2e7d32"
-                [attr.stroke-width]="
+        <!-- Beds -->
+        @for (b of g.beds; track b.id) {
+        <g (click)="selectBed(b, $event)" class="clickable">
+          <rect
+            [attr.x]="b.xM"
+            [attr.y]="b.yM"
+            [attr.width]="b.widthM"
+            [attr.height]="b.lengthM"
+            fill="#a5d6a7"
+            stroke="#2e7d32"
+            [attr.stroke-width]="
                   selectedBed()?.id === b.id ? 0.06 : 0.03
                 "
-                [attr.stroke-dasharray]="
+            [attr.stroke-dasharray]="
                   selectedBed()?.id === b.id ? '0.1 0.05' : 'none'
                 "
-              />
-              <text
-                [attr.x]="b.xM + b.widthM / 2"
-                [attr.y]="b.yM + b.lengthM / 2"
-                text-anchor="middle"
-                dominant-baseline="central"
-                [attr.font-size]="Math.min(b.widthM, b.lengthM) * 0.3"
-                fill="#1b5e20"
-              >
-                {{ b.name }}
-              </text>
-            </g>
-          }
+          />
+          <text
+            [attr.x]="b.xM + b.widthM / 2"
+            [attr.y]="b.yM + b.lengthM / 2"
+            text-anchor="middle"
+            dominant-baseline="central"
+            [attr.font-size]="Math.min(b.widthM, b.lengthM) * 0.3"
+            fill="#1b5e20"
+          >
+            {{ b.name }}
+          </text>
+        </g>
+        }
 
-          <!-- Ghost preview -->
-          @if (ghost(); as gh) {
-            <rect
-              [attr.x]="gh.x"
-              [attr.y]="gh.y"
-              [attr.width]="gh.w"
-              [attr.height]="gh.h"
-              [attr.fill]="
+        <!-- Ghost preview -->
+        @if (ghost(); as gh) {
+        <rect
+          [attr.x]="gh.x"
+          [attr.y]="gh.y"
+          [attr.width]="gh.w"
+          [attr.height]="gh.h"
+          [attr.fill]="
                 gh.type === 'bed'
                   ? 'rgba(76,175,80,0.3)'
                   : 'rgba(158,158,158,0.3)'
               "
-              [attr.stroke]="gh.type === 'bed' ? '#2e7d32' : '#757575'"
-              stroke-width="0.03"
-              stroke-dasharray="0.1 0.05"
-              pointer-events="none"
-            />
-          }
-        </svg>
-      </div>
+          [attr.stroke]="gh.type === 'bed' ? '#2e7d32' : '#757575'"
+          stroke-width="0.03"
+          stroke-dasharray="0.1 0.05"
+          pointer-events="none"
+        />
+        }
+      </svg>
     </div>
   </div>
+</div>
 }

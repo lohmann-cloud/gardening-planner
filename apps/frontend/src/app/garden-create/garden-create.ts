@@ -1,6 +1,12 @@
 import { Component, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
-import { form, FormField, FormRoot, required, min } from '@angular/forms/signals';
+import {
+  form,
+  FormField,
+  FormRoot,
+  required,
+  min,
+} from '@angular/forms/signals';
 import { firstValueFrom } from 'rxjs';
 import { ApiService } from '../services/api.service';
 
