@@ -37,14 +37,13 @@
               <h4>New Bed</h4>
               <label>
                 Name
-                <input type="text" [(ngModel)]="newBedName" />
+                <input type="text" [formField]="bedForm.name" />
               </label>
               <label>
                 Width (m)
                 <input
                   type="number"
-                  [(ngModel)]="newBedWidthM"
-                  min="0.5"
+                  [formField]="bedForm.widthM"
                   step="0.5"
                 />
               </label>
@@ -52,8 +51,7 @@
                 Length (m)
                 <input
                   type="number"
-                  [(ngModel)]="newBedLengthM"
-                  min="0.5"
+                  [formField]="bedForm.lengthM"
                   step="0.5"
                 />
               </label>
@@ -65,14 +63,13 @@
               <h4>New Obstacle</h4>
               <label>
                 Label
-                <input type="text" [(ngModel)]="newObstacleLabel" />
+                <input type="text" [formField]="obstacleForm.label" />
               </label>
               <label>
                 Width (m)
                 <input
                   type="number"
-                  [(ngModel)]="newObstacleWidthM"
-                  min="0.1"
+                  [formField]="obstacleForm.widthM"
                   step="0.5"
                 />
               </label>
@@ -80,8 +77,7 @@
                 Length (m)
                 <input
                   type="number"
-                  [(ngModel)]="newObstacleLengthM"
-                  min="0.1"
+                  [formField]="obstacleForm.lengthM"
                   step="0.5"
                 />
               </label>

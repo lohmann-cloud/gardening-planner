@@ -1,22 +1,22 @@
 <div class="create-page">
   <h1>Create Garden</h1>
-  <form (ngSubmit)="submit()" class="form">
+  <form [formRoot]="gardenForm" class="form">
     <label>
       Garden Name
       <input
         type="text"
-        [(ngModel)]="name"
-        name="name"
-        required
+        [formField]="gardenForm.name"
         placeholder="e.g. Backyard Garden"
       />
     </label>
+    @if (gardenForm.name().touched() && gardenForm.name().invalid()) {
+      <p class="error">{{ gardenForm.name().errors()[0]?.message }}</p>
+    }
 
     <label>
       Description (optional)
       <textarea
-        [(ngModel)]="description"
-        name="description"
+        [formField]="gardenForm.description"
         rows="2"
         placeholder="Notes about this garden"
       ></textarea>
@@ -27,10 +27,7 @@
         Width (metres)
         <input
           type="number"
-          [(ngModel)]="widthM"
-          name="widthM"
-          required
-          min="0.5"
+          [formField]="gardenForm.widthM"
           step="0.5"
         />
       </label>
@@ -38,25 +35,30 @@
         Length (metres)
         <input
           type="number"
-          [(ngModel)]="lengthM"
-          name="lengthM"
-          required
-          min="0.5"
+          [formField]="gardenForm.lengthM"
           step="0.5"
         />
       </label>
     </div>
 
-    @if (widthM > 0 && lengthM > 0) {
+    @if (gardenForm.widthM().value() > 0 && gardenForm.lengthM().value() > 0) {
       <div class="preview">
-        <p>Preview: {{ widthM }}m &times; {{ lengthM }}m</p>
+        <p>
+          Preview: {{ gardenForm.widthM().value() }}m &times;
+          {{ gardenForm.lengthM().value() }}m
+        </p>
         <svg
-          [attr.viewBox]="'0 0 ' + widthM + ' ' + lengthM"
+          [attr.viewBox]="
+            '0 0 ' +
+            gardenForm.widthM().value() +
+            ' ' +
+            gardenForm.lengthM().value()
+          "
           preserveAspectRatio="xMidYMid meet"
         >
           <rect
-            [attr.width]="widthM"
-            [attr.height]="lengthM"
+            [attr.width]="gardenForm.widthM().value()"
+            [attr.height]="gardenForm.lengthM().value()"
             fill="#e8f5e9"
             stroke="#4caf50"
             stroke-width="0.05"
@@ -72,7 +74,7 @@
       <button
         type="submit"
         class="btn btn-primary"
-        [disabled]="!name || widthM < 0.5 || lengthM < 0.5"
+        [disabled]="gardenForm().invalid()"
       >
         Create
       </button>

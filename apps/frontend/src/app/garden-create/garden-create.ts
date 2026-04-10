@@ -1,11 +1,19 @@
-import { Component, inject } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import { Component, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
+import { form, FormField, FormRoot, required, min } from '@angular/forms/signals';
+import { firstValueFrom } from 'rxjs';
 import { ApiService } from '../services/api.service';
+
+interface GardenFormData {
+  name: string;
+  description: string;
+  widthM: number;
+  lengthM: number;
+}
 
 @Component({
   selector: 'app-garden-create',
-  imports: [FormsModule],
+  imports: [FormField, FormRoot],
   templateUrl: './garden-create.html',
   styleUrl: './garden-create.scss',
 })
@@ -13,23 +21,37 @@ export class GardenCreateComponent {
   private readonly api = inject(ApiService);
   private readonly router = inject(Router);
 
-  protected name = '';
-  protected description = '';
-  protected widthM = 10;
-  protected lengthM = 8;
+  private readonly model = signal<GardenFormData>({
+    name: '',
+    description: '',
+    widthM: 10,
+    lengthM: 8,
+  });
 
-  protected submit() {
-    this.api
-      .createGarden({
-        name: this.name,
-        description: this.description || undefined,
-        widthM: this.widthM,
-        lengthM: this.lengthM,
-      })
-      .subscribe((garden) => {
-        this.router.navigate(['/gardens', garden.id]);
-      });
-  }
+  protected readonly gardenForm = form(
+    this.model,
+    (path) => {
+      required(path.name, { message: 'Garden name is required' });
+      min(path.widthM, 0.5);
+      min(path.lengthM, 0.5);
+    },
+    {
+      submission: {
+        action: async (field) => {
+          const value = field().value();
+          const garden = await firstValueFrom(
+            this.api.createGarden({
+              name: value.name,
+              description: value.description || undefined,
+              widthM: value.widthM,
+              lengthM: value.lengthM,
+            })
+          );
+          this.router.navigate(['/gardens', garden.id]);
+        },
+      },
+    }
+  );
 
   protected cancel() {
     this.router.navigate(['/']);

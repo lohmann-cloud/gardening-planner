@@ -1,6 +1,6 @@
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
-import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterModule } from '@angular/router';
+import { form, FormField, min, required } from '@angular/forms/signals';
 import {
   ApiService,
   Garden,
@@ -12,7 +12,7 @@ type Tool = 'select' | 'bed' | 'obstacle';
 
 @Component({
   selector: 'app-garden-layout',
-  imports: [FormsModule, RouterModule],
+  imports: [FormField, RouterModule],
   templateUrl: './garden-layout.html',
   styleUrl: './garden-layout.scss',
 })
@@ -52,12 +52,29 @@ export class GardenLayoutComponent implements OnInit {
     return lines;
   });
 
-  protected newBedName = 'Bed';
-  protected newBedWidthM = 2;
-  protected newBedLengthM = 1;
-  protected newObstacleLabel = 'Shed';
-  protected newObstacleWidthM = 2;
-  protected newObstacleLengthM = 2;
+  private readonly bedModel = signal({
+    name: 'Bed',
+    widthM: 2,
+    lengthM: 1,
+  });
+
+  protected readonly bedForm = form(this.bedModel, (path) => {
+    required(path.name);
+    min(path.widthM, 0.5);
+    min(path.lengthM, 0.5);
+  });
+
+  private readonly obstacleModel = signal({
+    label: 'Shed',
+    widthM: 2,
+    lengthM: 2,
+  });
+
+  protected readonly obstacleForm = form(this.obstacleModel, (path) => {
+    required(path.label);
+    min(path.widthM, 0.1);
+    min(path.lengthM, 0.1);
+  });
 
   ngOnInit() {
     const id = this.route.snapshot.paramMap.get('id')!;
@@ -74,9 +91,13 @@ export class GardenLayoutComponent implements OnInit {
     if (!pt) return;
 
     const w =
-      this.tool() === 'bed' ? this.newBedWidthM : this.newObstacleWidthM;
+      this.tool() === 'bed'
+        ? this.bedForm.widthM().value()
+        : this.obstacleForm.widthM().value();
     const h =
-      this.tool() === 'bed' ? this.newBedLengthM : this.newObstacleLengthM;
+      this.tool() === 'bed'
+        ? this.bedForm.lengthM().value()
+        : this.obstacleForm.lengthM().value();
     const g = this.garden()!;
 
     let x = this.snap(pt.x - w / 2);
@@ -96,25 +117,25 @@ export class GardenLayoutComponent implements OnInit {
       this.clearSelection();
       this.api
         .createBed(g.id, {
-          name: this.newBedName,
+          name: this.bedForm.name().value(),
           xM: gh.x,
           yM: gh.y,
-          widthM: this.newBedWidthM,
-          lengthM: this.newBedLengthM,
+          widthM: this.bedForm.widthM().value(),
+          lengthM: this.bedForm.lengthM().value(),
         })
         .subscribe(() => {
           this.loadGarden(g.id);
-          this.newBedName = `Bed ${(g.beds.length ?? 0) + 2}`;
+          this.bedForm.name().value.set(`Bed ${(g.beds.length ?? 0) + 2}`);
         });
     } else if (this.tool() === 'obstacle') {
       this.clearSelection();
       this.api
         .createObstacle(g.id, {
-          label: this.newObstacleLabel,
+          label: this.obstacleForm.label().value(),
           xM: gh.x,
           yM: gh.y,
-          widthM: this.newObstacleWidthM,
-          lengthM: this.newObstacleLengthM,
+          widthM: this.obstacleForm.widthM().value(),
+          lengthM: this.obstacleForm.lengthM().value(),
         })
         .subscribe(() => this.loadGarden(g.id));
     }
