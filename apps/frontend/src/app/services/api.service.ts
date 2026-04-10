@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 
 export interface Garden {
@@ -38,7 +38,7 @@ const API = 'http://localhost:3000/api';
 
 @Injectable({ providedIn: 'root' })
 export class ApiService {
-  constructor(private http: HttpClient) {}
+  private readonly http = inject(HttpClient);
 
   // Gardens
   getGardens() {
@@ -60,7 +60,7 @@ export class ApiService {
 
   updateGarden(
     id: string,
-    data: Partial<Pick<Garden, 'name' | 'description' | 'widthM' | 'lengthM'>>
+    data: Partial<Pick<Garden, 'name' | 'description' | 'widthM' | 'lengthM'>>,
   ) {
     return this.http.patch<Garden>(`${API}/gardens/${id}`, data);
   }
@@ -82,7 +82,7 @@ export class ApiService {
       yM: number;
       widthM: number;
       lengthM: number;
-    }
+    },
   ) {
     return this.http.post<GardenBed>(`${API}/gardens/${gardenId}/beds`, data);
   }
@@ -90,7 +90,7 @@ export class ApiService {
   updateBed(gardenId: string, id: string, data: Partial<GardenBed>) {
     return this.http.patch<GardenBed>(
       `${API}/gardens/${gardenId}/beds/${id}`,
-      data
+      data,
     );
   }
 
@@ -111,18 +111,18 @@ export class ApiService {
       yM: number;
       widthM: number;
       lengthM: number;
-    }
+    },
   ) {
     return this.http.post<Obstacle>(
       `${API}/gardens/${gardenId}/obstacles`,
-      data
+      data,
     );
   }
 
   updateObstacle(gardenId: string, id: string, data: Partial<Obstacle>) {
     return this.http.patch<Obstacle>(
       `${API}/gardens/${gardenId}/obstacles/${id}`,
-      data
+      data,
     );
   }
 

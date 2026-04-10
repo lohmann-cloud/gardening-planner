@@ -1,12 +1,11 @@
-import { Component } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { ApiService } from '../services/api.service';
 
 @Component({
   selector: 'app-garden-create',
-  imports: [CommonModule, FormsModule],
+  imports: [FormsModule],
   template: `
     <div class="create-page">
       <h1>Create Garden</h1>
@@ -57,21 +56,23 @@ import { ApiService } from '../services/api.service';
           </label>
         </div>
 
-        <div class="preview" *ngIf="widthM > 0 && lengthM > 0">
-          <p>Preview: {{ widthM }}m &times; {{ lengthM }}m</p>
-          <svg
-            [attr.viewBox]="'0 0 ' + widthM + ' ' + lengthM"
-            preserveAspectRatio="xMidYMid meet"
-          >
-            <rect
-              [attr.width]="widthM"
-              [attr.height]="lengthM"
-              fill="#e8f5e9"
-              stroke="#4caf50"
-              stroke-width="0.05"
-            />
-          </svg>
-        </div>
+        @if (widthM > 0 && lengthM > 0) {
+          <div class="preview">
+            <p>Preview: {{ widthM }}m &times; {{ lengthM }}m</p>
+            <svg
+              [attr.viewBox]="'0 0 ' + widthM + ' ' + lengthM"
+              preserveAspectRatio="xMidYMid meet"
+            >
+              <rect
+                [attr.width]="widthM"
+                [attr.height]="lengthM"
+                fill="#e8f5e9"
+                stroke="#4caf50"
+                stroke-width="0.05"
+              />
+            </svg>
+          </div>
+        }
 
         <div class="actions">
           <button type="button" class="btn btn-secondary" (click)="cancel()">
@@ -109,14 +110,15 @@ import { ApiService } from '../services/api.service';
   `,
 })
 export class GardenCreateComponent {
-  name = '';
-  description = '';
-  widthM = 10;
-  lengthM = 8;
+  private readonly api = inject(ApiService);
+  private readonly router = inject(Router);
 
-  constructor(private api: ApiService, private router: Router) {}
+  protected name = '';
+  protected description = '';
+  protected widthM = 10;
+  protected lengthM = 8;
 
-  submit() {
+  protected submit() {
     this.api
       .createGarden({
         name: this.name,
@@ -129,7 +131,7 @@ export class GardenCreateComponent {
       });
   }
 
-  cancel() {
+  protected cancel() {
     this.router.navigate(['/']);
   }
 }

@@ -1,11 +1,10 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { ApiService, Garden } from '../services/api.service';
 
 @Component({
   selector: 'app-dashboard',
-  imports: [CommonModule, RouterModule],
+  imports: [RouterModule],
   template: `
     <div class="dashboard">
       <header class="dashboard-header">
@@ -13,63 +12,67 @@ import { ApiService, Garden } from '../services/api.service';
         <a routerLink="/gardens/new" class="btn btn-primary">+ New Garden</a>
       </header>
 
-      <div class="garden-grid" *ngIf="gardens.length; else empty">
-        <div class="garden-card" *ngFor="let g of gardens">
-          <a [routerLink]="['/gardens', g.id]" class="garden-card-link">
-            <div class="garden-preview">
-              <svg
-                [attr.viewBox]="'0 0 ' + g.widthM + ' ' + g.lengthM"
-                preserveAspectRatio="xMidYMid meet"
-              >
-                <rect
-                  [attr.width]="g.widthM"
-                  [attr.height]="g.lengthM"
-                  fill="#e8f5e9"
-                  stroke="#4caf50"
-                  stroke-width="0.05"
-                />
-                <rect
-                  *ngFor="let b of g.beds"
-                  [attr.x]="b.xM"
-                  [attr.y]="b.yM"
-                  [attr.width]="b.widthM"
-                  [attr.height]="b.lengthM"
-                  fill="#a5d6a7"
-                  stroke="#388e3c"
-                  stroke-width="0.03"
-                />
-                <rect
-                  *ngFor="let o of g.obstacles"
-                  [attr.x]="o.xM"
-                  [attr.y]="o.yM"
-                  [attr.width]="o.widthM"
-                  [attr.height]="o.lengthM"
-                  fill="#bdbdbd"
-                  stroke="#757575"
-                  stroke-width="0.03"
-                />
-              </svg>
+      @if (gardens().length) {
+        <div class="garden-grid">
+          @for (g of gardens(); track g.id) {
+            <div class="garden-card">
+              <a [routerLink]="['/gardens', g.id]" class="garden-card-link">
+                <div class="garden-preview">
+                  <svg
+                    [attr.viewBox]="'0 0 ' + g.widthM + ' ' + g.lengthM"
+                    preserveAspectRatio="xMidYMid meet"
+                  >
+                    <rect
+                      [attr.width]="g.widthM"
+                      [attr.height]="g.lengthM"
+                      fill="#e8f5e9"
+                      stroke="#4caf50"
+                      stroke-width="0.05"
+                    />
+                    @for (b of g.beds; track b.id) {
+                      <rect
+                        [attr.x]="b.xM"
+                        [attr.y]="b.yM"
+                        [attr.width]="b.widthM"
+                        [attr.height]="b.lengthM"
+                        fill="#a5d6a7"
+                        stroke="#388e3c"
+                        stroke-width="0.03"
+                      />
+                    }
+                    @for (o of g.obstacles; track o.id) {
+                      <rect
+                        [attr.x]="o.xM"
+                        [attr.y]="o.yM"
+                        [attr.width]="o.widthM"
+                        [attr.height]="o.lengthM"
+                        fill="#bdbdbd"
+                        stroke="#757575"
+                        stroke-width="0.03"
+                      />
+                    }
+                  </svg>
+                </div>
+                <div class="garden-info">
+                  <h3>{{ g.name }}</h3>
+                  <p>
+                    {{ g.widthM }}m &times; {{ g.lengthM }}m &middot;
+                    {{ g.beds.length }} beds
+                  </p>
+                </div>
+              </a>
+              <button class="btn-delete" (click)="deleteGarden(g, $event)">
+                &times;
+              </button>
             </div>
-            <div class="garden-info">
-              <h3>{{ g.name }}</h3>
-              <p>
-                {{ g.widthM }}m &times; {{ g.lengthM }}m &middot;
-                {{ g.beds.length }} beds
-              </p>
-            </div>
-          </a>
-          <button class="btn-delete" (click)="deleteGarden(g, $event)">
-            &times;
-          </button>
+          }
         </div>
-      </div>
-
-      <ng-template #empty>
+      } @else {
         <div class="empty-state">
           <p>No gardens yet. Create your first one!</p>
           <a routerLink="/gardens/new" class="btn btn-primary">Create Garden</a>
         </div>
-      </ng-template>
+      }
     </div>
   `,
   styles: `
@@ -95,29 +98,23 @@ import { ApiService, Garden } from '../services/api.service';
   `,
 })
 export class DashboardComponent implements OnInit {
-  gardens: Garden[] = [];
+  private readonly api = inject(ApiService);
 
-  constructor(private api: ApiService, private cdr: ChangeDetectorRef) {}
+  protected readonly gardens = signal<Garden[]>([]);
 
   ngOnInit() {
-    this.load();
+    this.loadGardens();
   }
 
-  load() {
-    this.api.getGardens().subscribe({
-      next: (g) => {
-        this.gardens = g;
-        this.cdr.markForCheck();
-      },
-      error: (err) => console.error('Failed to load gardens:', err),
-    });
-  }
-
-  deleteGarden(g: Garden, event: Event) {
+  protected deleteGarden(g: Garden, event: Event) {
     event.preventDefault();
     event.stopPropagation();
     if (confirm(`Delete "${g.name}"?`)) {
-      this.api.deleteGarden(g.id).subscribe(() => this.load());
+      this.api.deleteGarden(g.id).subscribe(() => this.loadGardens());
     }
+  }
+
+  private loadGardens() {
+    this.api.getGardens().subscribe((g) => this.gardens.set(g));
   }
 }
