@@ -1,0 +1,81 @@
+<div class="create-page">
+  <h1>Create Garden</h1>
+  <form (ngSubmit)="submit()" class="form">
+    <label>
+      Garden Name
+      <input
+        type="text"
+        [(ngModel)]="name"
+        name="name"
+        required
+        placeholder="e.g. Backyard Garden"
+      />
+    </label>
+
+    <label>
+      Description (optional)
+      <textarea
+        [(ngModel)]="description"
+        name="description"
+        rows="2"
+        placeholder="Notes about this garden"
+      ></textarea>
+    </label>
+
+    <div class="row">
+      <label>
+        Width (metres)
+        <input
+          type="number"
+          [(ngModel)]="widthM"
+          name="widthM"
+          required
+          min="0.5"
+          step="0.5"
+        />
+      </label>
+      <label>
+        Length (metres)
+        <input
+          type="number"
+          [(ngModel)]="lengthM"
+          name="lengthM"
+          required
+          min="0.5"
+          step="0.5"
+        />
+      </label>
+    </div>
+
+    @if (widthM > 0 && lengthM > 0) {
+      <div class="preview">
+        <p>Preview: {{ widthM }}m &times; {{ lengthM }}m</p>
+        <svg
+          [attr.viewBox]="'0 0 ' + widthM + ' ' + lengthM"
+          preserveAspectRatio="xMidYMid meet"
+        >
+          <rect
+            [attr.width]="widthM"
+            [attr.height]="lengthM"
+            fill="#e8f5e9"
+            stroke="#4caf50"
+            stroke-width="0.05"
+          />
+        </svg>
+      </div>
+    }
+
+    <div class="actions">
+      <button type="button" class="btn btn-secondary" (click)="cancel()">
+        Cancel
+      </button>
+      <button
+        type="submit"
+        class="btn btn-primary"
+        [disabled]="!name || widthM < 0.5 || lengthM < 0.5"
+      >
+        Create
+      </button>
+    </div>
+  </form>
+</div>
