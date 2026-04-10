@@ -48,6 +48,9 @@
       }
     }
   ],
+  "sync": {
+    "applyChanges": true
+  },
   "nxCloudId": "69d76a14d44971d51f8202c7",
   "analytics": false,
   "targetDefaults": {
