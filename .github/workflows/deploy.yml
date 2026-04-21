@@ -1,0 +1,61 @@
+name: Build and Deploy
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Required for Nx affected commands
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20' # LTS Version
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      # Optional: Check formatting, linting, and run tests
+      # - name: Run Linting
+      #   run: npx nx affected -t lint
+
+      # - name: Run Tests
+      #   run: npx nx affected -t test
+
+      - name: Build Frontend
+        run: npx nx build frontend --prod
+
+      - name: Build Backend
+        run: npx nx build backend --prod
+
+  deploy-backend:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/master' && github.event_name == 'push'
+    steps:
+      - name: Trigger Render Deployment
+        run: |
+          # Du musst in deinen GitHub Repository Secrets ein Secret namens RENDER_DEPLOY_HOOK anlegen.
+          # Diesen Hook-URL erhältst du in deinem Render Dashboard unter "Settings" -> "Deploy Hook".
+          if [ -n "${{ secrets.RENDER_DEPLOY_HOOK }}" ]; then
+            curl -X POST "${{ secrets.RENDER_DEPLOY_HOOK }}"
+            echo "Render deploy triggered successfully."
+          else
+            echo "No RENDER_DEPLOY_HOOK secret found. Skipping Render deployment."
+          fi
+
+  # Hinweis zu Vercel (Frontend):
+  # Vercel wird normalerweise direkt über die Vercel GitHub App konfiguriert.
+  # Sobald die App installiert ist, baut und deployt Vercel bei jedem Push auf `master` automatisch.
+  # Ein expliziter Job in GitHub Actions ist dafür in der Regel nicht nötig.
