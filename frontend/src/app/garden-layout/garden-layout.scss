@@ -1,0 +1,241 @@
+.layout-page {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.layout-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 2rem;
+  background: white;
+  border-bottom: 1px solid #e0e0e0;
+
+  h1 {
+    margin: 0;
+    font-size: 1.3rem;
+    color: #2e7d32;
+  }
+}
+
+.back {
+  text-decoration: none;
+  color: #666;
+  font-size: 1.1rem;
+}
+
+.dims {
+  color: #999;
+  font-size: 0.9rem;
+}
+
+.layout-body {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+.toolbar {
+  width: 240px;
+  padding: 1rem;
+  background: white;
+  border-right: 1px solid #e0e0e0;
+  overflow-y: auto;
+
+  h3 {
+    margin: 0 0 1rem;
+    color: #333;
+  }
+
+  button:not([class^="btn"]) {
+    display: block;
+    width: 100%;
+    padding: 0.5rem;
+    margin-bottom: 0.4rem;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    background: white;
+    cursor: pointer;
+    text-align: left;
+    font-size: 0.9rem;
+
+    &.active {
+      background: #e8f5e9;
+      border-color: #4caf50;
+      color: #2e7d32;
+      font-weight: 600;
+    }
+
+    &:hover {
+      background: #f5f5f5;
+    }
+  }
+
+  hr {
+    margin: 1rem 0;
+    border: none;
+    border-top: 1px solid #e0e0e0;
+  }
+}
+
+.tool-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+
+  h4 {
+    margin: 0;
+    color: #333;
+  }
+
+  label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    font-size: 0.85rem;
+    color: #555;
+  }
+
+  input {
+    padding: 0.4rem 0.5rem;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 0.9rem;
+
+    &:focus {
+      outline: none;
+      border-color: #4caf50;
+    }
+  }
+}
+
+.hint {
+  color: #999;
+  font-size: 0.8rem;
+  font-style: italic;
+  margin: 0;
+}
+
+.detail {
+  margin: 0;
+  color: #666;
+  font-size: 0.85rem;
+}
+
+.btn-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.btn-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.btn-primary {
+  padding: 0.4rem 0.8rem;
+  background: #2e7d32;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 500;
+
+  &:hover { background: #1b5e20; }
+}
+
+.btn-secondary {
+  padding: 0.4rem 0.8rem;
+  background: #f0f0f0;
+  color: #222;
+  border: 1px solid #bbb;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 500;
+
+  &:hover { background: #e0e0e0; }
+}
+
+.btn-danger {
+  padding: 0.4rem 0.8rem;
+  background: #c62828;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 500;
+
+  &:hover { background: #b71c1c; }
+}
+
+.canvas-container {
+  flex: 1;
+  background: #fafafa;
+  position: relative;
+  overflow: hidden;
+  cursor: grab;
+
+  &.is-panning {
+    cursor: grabbing;
+  }
+
+  &.placement-mode {
+    cursor: crosshair;
+  }
+}
+
+.canvas-world {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: 0 0;
+}
+
+.zoom-controls {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  z-index: 10;
+  display: inline-flex;
+  gap: 0.25rem;
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  padding: 0.25rem;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+
+  button {
+    min-width: 2rem;
+    padding: 0.25rem 0.5rem;
+    background: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    color: #333;
+
+    &:hover { background: #f5f5f5; }
+  }
+}
+
+.garden-canvas {
+  display: block;
+  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.1));
+}
+
+.clickable {
+  cursor: grab;
+
+  &.dragging {
+    cursor: grabbing;
+  }
+}
+
+.rotate-handle {
+  cursor: crosshair;
+}

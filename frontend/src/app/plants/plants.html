@@ -1,0 +1,84 @@
+<div class="plants-page">
+  <header class="plants-header">
+    <h1>Pflanzenkatalog</h1>
+    <a routerLink="/" class="btn btn-secondary">&larr; Dashboard</a>
+  </header>
+
+  <div class="filters">
+    <input
+      type="text"
+      placeholder="Suche nach Name, Familie..."
+      [value]="search()"
+      (input)="onSearch($event)"
+      class="search-input"
+    />
+    <select (change)="onCategoryChange($event)" class="filter-select">
+      <option value="">Alle Kategorien</option>
+      @for (cat of categories(); track cat) {
+        <option [value]="cat">{{ categoryLabel(cat) }}</option>
+      }
+    </select>
+    <select (change)="onDemandChange($event)" class="filter-select">
+      <option value="">Alle Zehrtypen</option>
+      <option value="HEAVY">Starkzehrer</option>
+      <option value="MEDIUM">Mittelzehrer</option>
+      <option value="LIGHT">Schwachzehrer</option>
+    </select>
+    <span class="result-count">{{ filteredPlants().length }} Pflanzen</span>
+  </div>
+
+  @if (filteredPlants().length) {
+    <div class="table-wrapper">
+      <table class="plants-table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Botanisch</th>
+            <th>Familie</th>
+            <th>Kategorie</th>
+            <th>Höhe</th>
+            <th>Abstand</th>
+            <th>Reihenabstand</th>
+            <th>Zehrtyp</th>
+            <th>Fruchtfolge</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (plant of filteredPlants(); track plant.id) {
+            <tr>
+              <td class="name-cell">{{ plant.name }}</td>
+              <td class="botanical-cell">
+                @if (plant.botanicalName) { <em>{{ plant.botanicalName }}</em> } @else { – }
+              </td>
+              <td>{{ plant.family ?? '–' }}</td>
+              <td><span class="badge badge-category">{{ categoryLabel(plant.category) }}</span></td>
+              <td>{{ heightDisplay(plant) }}</td>
+              <td>{{ plant.spacingCm }} cm</td>
+              <td>{{ plant.rowSpacingCm ? plant.rowSpacingCm + ' cm' : '–' }}</td>
+              <td>
+                @if (plant.nutrientDemand) {
+                  <span class="badge" [class]="demandClass(plant.nutrientDemand)">
+                    {{ demandLabel(plant.nutrientDemand) }}
+                  </span>
+                } @else { – }
+              </td>
+              <td>
+                @if (plant.rotationYears) {
+                  {{ plant.rotationYears }} {{ plant.rotationYears === 1 ? 'Jahr' : 'Jahre' }}
+                } @else { – }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  } @else {
+    <div class="empty-state">
+      @if (plants().length === 0) {
+        <p>Pflanzenkatalog wird geladen...</p>
+      } @else {
+        <p>Keine Pflanzen gefunden.</p>
+      }
+    </div>
+  }
+</div>

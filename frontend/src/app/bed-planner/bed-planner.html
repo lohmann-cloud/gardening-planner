@@ -1,0 +1,192 @@
+@if (bed(); as b) {
+  <div class="planner-page">
+    <header class="planner-header">
+      @if (garden(); as g) {
+        <a [routerLink]="['/gardens', g.id]" class="back">&larr; {{ g.name }}</a>
+      }
+      <h1>{{ b.name }}</h1>
+      <span class="dims">{{ b.widthM }}m &times; {{ b.lengthM }}m &middot; {{ year() }}</span>
+    </header>
+
+    <div class="planner-body">
+      <aside class="palette">
+        <h3>Pflanzen</h3>
+        <input
+          type="text"
+          placeholder="Suche..."
+          [value]="plantSearch()"
+          (input)="onSearchInput($event)"
+          class="search-input"
+        />
+
+        <div class="plant-list">
+          @for (plant of filteredPlants(); track plant.id) {
+            <button
+              class="plant-item"
+              [class.selected]="selectedPlant()?.id === plant.id"
+              (click)="selectPlant(plant)"
+            >
+              <span class="plant-name">{{ plant.name }}</span>
+              <span class="plant-meta">
+                {{ plant.spacingCm }}cm
+                @if (plant.nutrientDemand) {
+                  &middot; {{ demandLabel(plant.nutrientDemand) }}
+                }
+              </span>
+            </button>
+          } @empty {
+            <p class="hint">Keine Pflanzen gefunden</p>
+          }
+        </div>
+
+        @if (selectedPlant(); as sp) {
+          <div class="plant-info">
+            <h4>{{ sp.name }}</h4>
+            @if (sp.botanicalName) {
+              <p class="botanical"><em>{{ sp.botanicalName }}</em></p>
+            }
+            <div class="info-grid">
+              <span>Abstand:</span><span>{{ sp.spacingCm }} cm</span>
+              <span>Reihenabstand:</span><span>{{ sp.rowSpacingCm ?? sp.spacingCm }} cm</span>
+              @if (sp.family) {
+                <span>Familie:</span><span>{{ sp.family }}</span>
+              }
+            </div>
+
+            <div class="spacing-control">
+              <div class="spacing-header">
+                <span>Pflanzabstand</span>
+                <span class="spacing-pct">{{ (spacingFactor() * 100) | number:'1.0-0' }}%</span>
+              </div>
+              <input
+                type="range" min="30" max="100" step="5"
+                [value]="spacingFactor() * 100"
+                (input)="onSpacingFactorInput($event)"
+                class="spacing-slider"
+              />
+              <span class="spacing-hint">
+                {{ (selectedPlant()!.spacingCm * spacingFactor()) | number:'1.0-0' }}&thinsp;cm
+                &times;
+                {{ ((selectedPlant()!.rowSpacingCm ?? selectedPlant()!.spacingCm) * spacingFactor()) | number:'1.0-0' }}&thinsp;cm
+                @if (spacingFactor() < 1) {
+                  <span class="spacing-warn">&#9888; unter Empfehlung</span>
+                }
+              </span>
+            </div>
+
+            @if (plantFitInfo(); as info) {
+              <div class="fit-info">
+                <p><strong>{{ info.total }}</strong> Pflanzen passen in das gesamte Beet</p>
+              </div>
+              <button class="btn-fill" (click)="fillBed()">&#127793; Gesamtes Beet füllen</button>
+            }
+
+            @if (selectionRect(); as rect) {
+              <div class="selection-info">
+                <p>
+                  Auswahl:
+                  {{ (rect.maxCol - rect.minCol + 1) * cellSize() }}cm &times;
+                  {{ (rect.maxRow - rect.minRow + 1) * cellSize() }}cm
+                </p>
+                <p><strong>{{ previewSpots().length }}</strong> Pflanzen im empfohlenen Abstand</p>
+                <div class="selection-actions">
+                  <button class="btn-confirm" (click)="confirmSelection()">&#10003; Bereich zuweisen</button>
+                  <button class="btn-cancel" (click)="cancelSelection()">&#10005; Abbrechen</button>
+                </div>
+              </div>
+            } @else {
+              <p class="hint">Ziehe einen Bereich im Beet auf, um ihn dieser Pflanze zuzuweisen.</p>
+            }
+          </div>
+        } @else {
+          <p class="hint palette-hint">Wähle eine Pflanze, dann ziehe einen Bereich im Beet auf.</p>
+        }
+
+        @if (zoneViews().length) {
+          <div class="zone-legend">
+            <h4>Bereiche</h4>
+            @for (zv of zoneViews(); track zv.zone.id) {
+              <div class="zone-legend-item">
+                <span class="zone-swatch" [style.background]="zv.colorLight" [style.border-color]="zv.color"></span>
+                <span class="zone-label">
+                  {{ zv.zone.plant.name }}
+                  <small>({{ zv.plantSpots.length }} Pfl.)</small>
+                </span>
+                <button class="zone-remove" title="Bereich entfernen" (click)="removeZone(zv, $event)">&times;</button>
+              </div>
+            }
+          </div>
+        }
+      </aside>
+
+      <div
+        #gridContainer
+        class="grid-container"
+        [class.is-panning]="isPanning()"
+        [class.has-plant]="!!selectedPlant()"
+        (mousedown)="onContainerMouseDown($event)"
+        (mousemove)="onContainerMouseMove($event)"
+        (mouseup)="onContainerMouseUp()"
+        (mouseleave)="onContainerMouseLeave()"
+        (wheel)="onWheel($event)"
+      >
+        <div class="zoom-controls">
+          <button type="button" (click)="zoomOut()" title="Zoom out">&minus;</button>
+          <button type="button" (click)="zoomReset()" title="Einpassen">&#8635;</button>
+          <button type="button" (click)="zoomIn()" title="Zoom in">+</button>
+        </div>
+
+        <div class="canvas-world" [style.transform]="canvasTransform()">
+          <div
+            class="bed-grid"
+            [class.has-plant]="!!selectedPlant()"
+            [style.grid-template-columns]="'repeat(' + cols() + ', ' + CELL_PX + 'px)'"
+            [style.grid-template-rows]="'repeat(' + rows() + ', ' + CELL_PX + 'px)'"
+          >
+            @for (r of [].constructor(rows()); track $index; let row = $index) {
+              @for (c of [].constructor(cols()); track $index; let col = $index) {
+                @if (zoneCellMap().get(col + ',' + row); as zv) {
+                  <div
+                    class="cell zone-cell"
+                    [class.plant-spot]="plantSpotMap().has(col + ',' + row)"
+                    [style.background]="plantSpotMap().has(col + ',' + row) ? zv.color : zv.colorLight"
+                    [title]="zv.zone.plant.name + (plantSpotMap().has(col + ',' + row) ? ' (Pflanzstelle)' : ' (Bereich)')"
+                    (mousedown)="onCellMouseDown(col, row, $event)"
+                    (mouseenter)="onCellMouseEnter(col, row)"
+                  >
+                    @if (plantSpotMap().has(col + ',' + row)) {
+                      <span class="spot-marker">&#127793;</span>
+                    }
+                  </div>
+                } @else {
+                  <div
+                    class="cell"
+                    [class.in-selection]="isInSelection(col, row)"
+                    [class.preview-spot]="previewSpotSet().has(col + ',' + row)"
+                    [title]="col * cellSize() + 'cm, ' + row * cellSize() + 'cm'"
+                    (mousedown)="onCellMouseDown(col, row, $event)"
+                    (mouseenter)="onCellMouseEnter(col, row)"
+                  >
+                    @if (previewSpotSet().has(col + ',' + row)) {
+                      <span class="spot-marker preview">&#127793;</span>
+                    }
+                  </div>
+                }
+              }
+            }
+          </div>
+        </div>
+
+        <div class="grid-legend">
+          <span>1 Zelle = {{ cellSize() }} cm</span>
+          <span>{{ cols() }} &times; {{ rows() }} Zellen</span>
+          @if (selectedPlant(); as sp) {
+            <span class="legend-plant">&#127793; {{ sp.name }} ({{ sp.spacingCm }}cm / {{ sp.rowSpacingCm ?? sp.spacingCm }}cm)</span>
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+} @else {
+  <div class="loading">Beet wird geladen...</div>
+}

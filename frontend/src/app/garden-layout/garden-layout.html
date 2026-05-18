@@ -1,0 +1,190 @@
+@if (garden(); as g) {
+  <div class="layout-page">
+    <header class="layout-header">
+      <a routerLink="/" class="back">&larr; Gardens</a>
+      <h1>{{ g.name }}</h1>
+      <span class="dims">{{ g.widthM }}m &times; {{ g.lengthM }}m</span>
+    </header>
+
+    <div class="layout-body">
+      <aside class="toolbar">
+        <h3>Tools</h3>
+        <button [class.active]="tool() === 'select'" (click)="tool.set('select')">&#9754; Select</button>
+        <button [class.active]="tool() === 'bed'" (click)="tool.set('bed')">&#9744; Add Bed</button>
+        <button [class.active]="tool() === 'obstacle'" (click)="tool.set('obstacle')">&#9632; Add Obstacle</button>
+
+        <hr />
+
+        @switch (tool()) {
+          @case ('bed') {
+            <div class="tool-form">
+              <h4>New Bed</h4>
+              <label>Name<input type="text" [formField]="bedForm.name" /></label>
+              <label>Width (m)<input type="number" [formField]="bedForm.widthM" step="0.5" /></label>
+              <label>Length (m)<input type="number" [formField]="bedForm.lengthM" step="0.5" /></label>
+              <p class="hint">Click on the grid to place</p>
+            </div>
+          }
+          @case ('obstacle') {
+            <div class="tool-form">
+              <h4>New Obstacle</h4>
+              <label>Label<input type="text" [formField]="obstacleForm.label" /></label>
+              <label>Width (m)<input type="number" [formField]="obstacleForm.widthM" step="0.5" /></label>
+              <label>Length (m)<input type="number" [formField]="obstacleForm.lengthM" step="0.5" /></label>
+              <p class="hint">Click on the grid to place</p>
+            </div>
+          }
+          @case ('select') {
+            @if (selectedBed(); as bed) {
+              <div class="tool-form">
+                @if (editingBed()) {
+                  <h4>Edit Bed</h4>
+                  <label>Name<input type="text" [formField]="editBedForm.name" /></label>
+                  <label>X Position (m)<input type="number" [formField]="editBedForm.xM" step="0.01" /></label>
+                  <label>Y Position (m)<input type="number" [formField]="editBedForm.yM" step="0.01" /></label>
+                  <label>Width (m)<input type="number" [formField]="editBedForm.widthM" step="0.5" /></label>
+                  <label>Length (m)<input type="number" [formField]="editBedForm.lengthM" step="0.5" /></label>
+                  <label>Rotation (°)<input type="number" [formField]="editBedForm.rotationDeg" step="1" /></label>
+                  <div class="btn-row">
+                    <button class="btn-primary" (click)="saveEditBed()">Save</button>
+                    <button class="btn-secondary" (click)="cancelEditBed()">Cancel</button>
+                  </div>
+                } @else {
+                  <h4>{{ bed.name }}</h4>
+                  <p class="detail">{{ bed.widthM }}m &times; {{ bed.lengthM }}m</p>
+                  <p class="detail">Position: ({{ bed.xM | number:'1.0-2' }}, {{ bed.yM | number:'1.0-2' }})</p>
+                  <p class="detail">Rotation: {{ bed.rotationDeg ?? 0 }}°</p>
+                  <p class="hint">Drag handle to rotate</p>
+                  <div class="btn-stack">
+                    <button class="btn-primary" (click)="openBedPlanner()">&#127793; Plant Bed</button>
+                    <button class="btn-secondary" (click)="startEditBed()">&#9998; Edit</button>
+                    <button class="btn-danger" (click)="deleteBed(bed)">&#10005; Delete</button>
+                  </div>
+                }
+              </div>
+            }
+            @if (selectedObstacle(); as obs) {
+              <div class="tool-form">
+                <h4>{{ obs.label }}</h4>
+                <p class="detail">{{ obs.widthM }}m &times; {{ obs.lengthM }}m</p>
+                <button class="btn-danger" (click)="deleteObstacle(obs)">&#10005; Delete</button>
+              </div>
+            }
+          }
+        }
+      </aside>
+
+      <div
+        class="canvas-container"
+        [class.is-panning]="isPanning()"
+        [class.placement-mode]="tool() !== 'select'"
+        (wheel)="onWheel($event)"
+      >
+        <div class="zoom-controls">
+          <button type="button" (click)="zoomOut()" title="Zoom out">&minus;</button>
+          <button type="button" (click)="zoomReset()" title="Reset zoom">
+            {{ (zoom() * 100) | number:'1.0-0' }}%
+          </button>
+          <button type="button" (click)="zoomIn()" title="Zoom in">+</button>
+        </div>
+
+        <div class="canvas-world" [style.transform]="canvasTransform()">
+          <svg
+            #gardenSvg
+            class="garden-canvas"
+            [attr.viewBox]="'0 0 ' + g.widthM + ' ' + g.lengthM"
+            [attr.width]="g.widthM * 100"
+            [attr.height]="g.lengthM * 100"
+            preserveAspectRatio="none"
+            (mousedown)="onCanvasMouseDown($event)"
+            (mousemove)="onCanvasMove($event)"
+            (mouseup)="onCanvasMouseUp($event)"
+            (mouseleave)="cancelDrag()"
+          >
+            <rect [attr.width]="g.widthM" [attr.height]="g.lengthM" fill="#e8f5e9" />
+
+            @for (x of gridLinesX(); track x) {
+              <line [attr.x1]="x" y1="0" [attr.x2]="x" [attr.y2]="g.lengthM" stroke="#c8e6c9" stroke-width="0.02" />
+            }
+            @for (y of gridLinesY(); track y) {
+              <line x1="0" [attr.y1]="y" [attr.x2]="g.widthM" [attr.y2]="y" stroke="#c8e6c9" stroke-width="0.02" />
+            }
+
+            @for (o of g.obstacles; track o.id) {
+              <g
+                class="clickable"
+                (mousedown)="onObstacleMouseDown(o, $event)"
+              >
+                <rect
+                  [attr.x]="o.xM" [attr.y]="o.yM" [attr.width]="o.widthM" [attr.height]="o.lengthM"
+                  fill="#bdbdbd" stroke="#757575"
+                  [attr.stroke-width]="selectedObstacle()?.id === o.id ? 0.06 : 0.03"
+                  [attr.stroke-dasharray]="selectedObstacle()?.id === o.id ? '0.1 0.05' : 'none'"
+                />
+                <text
+                  [attr.x]="o.xM + o.widthM / 2" [attr.y]="o.yM + o.lengthM / 2"
+                  text-anchor="middle" dominant-baseline="central"
+                  [attr.font-size]="Math.min(o.widthM, o.lengthM) * 0.3" fill="#424242"
+                  pointer-events="none"
+                >{{ o.label }}</text>
+              </g>
+            }
+
+            @for (b of g.beds; track b.id) {
+              @let isDragging = draggedBed()?.id === b.id;
+              @let isRotating = rotatingBed()?.id === b.id;
+              @let bx = isDragging ? (dragPos()?.x ?? b.xM) : b.xM;
+              @let by = isDragging ? (dragPos()?.y ?? b.yM) : b.yM;
+              @let rot = isRotating ? rotationAngle() : (b.rotationDeg ?? 0);
+              @let cx = bx + b.widthM / 2;
+              @let cy = by + b.lengthM / 2;
+              <g
+                (mousedown)="onBedMouseDown(b, $event)"
+                class="clickable"
+                [class.dragging]="isDragging"
+                [attr.transform]="'rotate(' + rot + ',' + cx + ',' + cy + ')'"
+              >
+                <rect
+                  [attr.x]="bx" [attr.y]="by" [attr.width]="b.widthM" [attr.height]="b.lengthM"
+                  fill="#a5d6a7" stroke="#2e7d32"
+                  [attr.stroke-width]="selectedBed()?.id === b.id ? 0.06 : 0.03"
+                  [attr.stroke-dasharray]="selectedBed()?.id === b.id ? '0.1 0.05' : 'none'"
+                  [attr.opacity]="isDragging ? 0.7 : 1"
+                />
+                <text
+                  [attr.x]="cx" [attr.y]="cy"
+                  text-anchor="middle" dominant-baseline="central"
+                  [attr.font-size]="Math.min(b.widthM, b.lengthM) * 0.3" fill="#1b5e20"
+                  [attr.opacity]="isDragging ? 0.7 : 1"
+                  pointer-events="none"
+                >{{ b.name }}</text>
+                @if (tool() === 'select' && selectedBed()?.id === b.id) {
+                  <line
+                    [attr.x1]="cx" [attr.y1]="by"
+                    [attr.x2]="cx" [attr.y2]="by - 0.4"
+                    stroke="#2e7d32" stroke-width="0.03" pointer-events="none"
+                  />
+                  <circle
+                    [attr.cx]="cx" [attr.cy]="by - 0.4" r="0.15"
+                    fill="#fff" stroke="#2e7d32" stroke-width="0.04"
+                    class="rotate-handle"
+                    (mousedown)="onRotateHandleMouseDown(b, $event)"
+                  />
+                }
+              </g>
+            }
+
+            @if (ghost(); as gh) {
+              <rect
+                [attr.x]="gh.x" [attr.y]="gh.y" [attr.width]="gh.w" [attr.height]="gh.h"
+                [attr.fill]="gh.type === 'bed' ? 'rgba(76,175,80,0.3)' : 'rgba(158,158,158,0.3)'"
+                [attr.stroke]="gh.type === 'bed' ? '#2e7d32' : '#757575'"
+                stroke-width="0.03" stroke-dasharray="0.1 0.05" pointer-events="none"
+              />
+            }
+          </svg>
+        </div>
+      </div>
+    </div>
+  </div>
+}

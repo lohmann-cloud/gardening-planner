@@ -1,0 +1,94 @@
+.plants-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.plants-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+
+  h1 { margin: 0; font-size: 1.8rem; }
+}
+
+.btn { display: inline-block; padding: 0.6rem 1.2rem; border-radius: 8px; text-decoration: none; font-weight: 500; }
+.btn-secondary { background: #e0e0e0; color: #333; &:hover { background: #bdbdbd; } }
+
+.filters {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.search-input {
+  flex: 1;
+  min-width: 200px;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 0.95rem;
+
+  &:focus { outline: none; border-color: #4caf50; box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2); }
+}
+
+.filter-select {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  background: white;
+  cursor: pointer;
+}
+
+.result-count { color: #757575; font-size: 0.9rem; white-space: nowrap; }
+
+.table-wrapper {
+  overflow-x: auto;
+  border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+}
+
+.plants-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+
+  th, td {
+    padding: 0.6rem 0.8rem;
+    text-align: left;
+    border-bottom: 1px solid #e0e0e0;
+    white-space: nowrap;
+  }
+
+  thead {
+    background: #f5f5f5;
+    th { font-weight: 600; color: #424242; position: sticky; top: 0; background: #f5f5f5; }
+  }
+
+  tbody tr {
+    &:hover { background: #f9fbe7; }
+    &:last-child td { border-bottom: none; }
+  }
+
+  .name-cell { font-weight: 600; }
+  .botanical-cell em { color: #616161; }
+}
+
+.badge {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  border-radius: 10px;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.badge-category { background: #e8f5e9; color: #2e7d32; }
+.demand-heavy { background: #fce4ec; color: #c62828; }
+.demand-medium { background: #fff3e0; color: #e65100; }
+.demand-light { background: #e8f5e9; color: #2e7d32; }
+
+.empty-state { text-align: center; padding: 3rem 1rem; color: #757575; }
