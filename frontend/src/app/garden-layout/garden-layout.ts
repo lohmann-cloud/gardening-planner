@@ -29,6 +29,7 @@ export class GardenLayoutComponent implements OnInit {
   protected readonly selectedBed = signal<GardenBed | null>(null);
   protected readonly selectedObstacle = signal<Obstacle | null>(null);
   protected readonly editingBed = signal(false);
+  protected readonly editingGarden = signal(false);
   protected readonly ghost = signal<{ x: number; y: number; w: number; h: number; type: string } | null>(null);
 
   // Viewport: pan in pixels, zoom as scale factor
@@ -84,6 +85,13 @@ export class GardenLayoutComponent implements OnInit {
     min(path.lengthM, 0.5);
     min(path.xM, 0);
     min(path.yM, 0);
+  });
+
+  private readonly editGardenModel = signal({ name: '', description: '', widthM: 0, lengthM: 0 });
+  protected readonly editGardenForm = form(this.editGardenModel, (path) => {
+    required(path.name);
+    min(path.widthM, 1);
+    min(path.lengthM, 1);
   });
 
   private readonly obstacleModel = signal({ label: 'Shed', widthM: 2, lengthM: 2 });
@@ -326,6 +334,42 @@ export class GardenLayoutComponent implements OnInit {
 
   protected cancelEditBed() {
     this.editingBed.set(false);
+  }
+
+  protected startEditGarden() {
+    const g = this.garden();
+    if (!g) return;
+    this.editGardenModel.set({
+      name: g.name,
+      description: g.description ?? '',
+      widthM: g.widthM,
+      lengthM: g.lengthM,
+    });
+    this.editingGarden.set(true);
+  }
+
+  protected saveEditGarden() {
+    const g = this.garden();
+    if (!g) return;
+    const name = this.editGardenForm.name().value();
+    const description = this.editGardenForm.description().value();
+    const widthM = this.editGardenForm.widthM().value();
+    const lengthM = this.editGardenForm.lengthM().value();
+    this.api.updateGarden(g.id, { name, description, widthM, lengthM }).subscribe((updated) => {
+      this.editingGarden.set(false);
+      this.garden.set({ ...g, ...updated });
+    });
+  }
+
+  protected cancelEditGarden() {
+    this.editingGarden.set(false);
+  }
+
+  protected deleteGarden() {
+    const g = this.garden();
+    if (!g) return;
+    if (!confirm(`Delete "${g.name}"? This will also remove its beds and plantings.`)) return;
+    this.api.deleteGarden(g.id).subscribe(() => this.router.navigate(['/']));
   }
 
   protected openBedPlanner() {

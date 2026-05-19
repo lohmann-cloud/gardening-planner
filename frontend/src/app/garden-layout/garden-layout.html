@@ -4,6 +4,9 @@
       <a routerLink="/" class="back">&larr; Gardens</a>
       <h1>{{ g.name }}</h1>
       <span class="dims">{{ g.widthM }}m &times; {{ g.lengthM }}m</span>
+      <button class="btn-edit" type="button" (click)="startEditGarden()" title="Edit garden">
+        &#9998;
+      </button>
     </header>
 
     <div class="layout-body">
@@ -197,5 +200,25 @@
         </div>
       </div>
     </div>
+
+    @if (editingGarden()) {
+      <div class="modal-backdrop" (click)="cancelEditGarden()">
+        <div class="modal" (click)="$event.stopPropagation()">
+          <h2>Edit Garden</h2>
+          <div class="tool-form">
+            <label>Name<input type="text" [formField]="editGardenForm.name" /></label>
+            <label>Description<textarea rows="2" [formField]="editGardenForm.description"></textarea></label>
+            <label>Width (m)<input type="number" [formField]="editGardenForm.widthM" step="0.5" min="1" /></label>
+            <label>Length (m)<input type="number" [formField]="editGardenForm.lengthM" step="0.5" min="1" /></label>
+          </div>
+          <div class="modal-actions">
+            <button class="btn-danger" type="button" (click)="deleteGarden()">Delete Garden</button>
+            <span class="spacer"></span>
+            <button class="btn-secondary" type="button" (click)="cancelEditGarden()">Cancel</button>
+            <button class="btn-primary" type="button" (click)="saveEditGarden()">Save</button>
+          </div>
+        </div>
+      </div>
+    }
   </div>
 }
