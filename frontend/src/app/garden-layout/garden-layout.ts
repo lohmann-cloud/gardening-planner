@@ -1,4 +1,4 @@
-import { Component, computed, ElementRef, inject, OnInit, signal, ViewChild } from '@angular/core';
+import { Component, computed, effect, ElementRef, inject, OnInit, signal, ViewChild } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { forkJoin } from 'rxjs';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
@@ -112,9 +112,43 @@ export class GardenLayoutComponent implements OnInit {
     min(path.lengthM, 0.1);
   });
 
+  private readonly viewPersistence = effect(() => {
+    const key = this.viewStorageKey();
+    if (!key) return;
+    const payload = { z: this.zoom(), px: this.panX(), py: this.panY() };
+    try {
+      localStorage.setItem(key, JSON.stringify(payload));
+    } catch {
+      // localStorage may be unavailable (private mode) — silently ignore
+    }
+  });
+
+  private viewStorageKey(): string | null {
+    const id = this.route.snapshot.paramMap.get('id');
+    return id ? `garden.view.${id}` : null;
+  }
+
+  private restoreView(): void {
+    const key = this.viewStorageKey();
+    if (!key) return;
+    try {
+      const raw = localStorage.getItem(key);
+      if (!raw) return;
+      const v = JSON.parse(raw);
+      if (typeof v?.z === 'number' && typeof v?.px === 'number' && typeof v?.py === 'number') {
+        this.zoom.set(v.z);
+        this.panX.set(v.px);
+        this.panY.set(v.py);
+      }
+    } catch {
+      // corrupted entry — ignore
+    }
+  }
+
   ngOnInit() {
     const id = this.route.snapshot.paramMap.get('id')!;
     this.currentUserId.set(this.auth.user()?.id ?? null);
+    this.restoreView();
     this.loadGarden(id);
   }
 
