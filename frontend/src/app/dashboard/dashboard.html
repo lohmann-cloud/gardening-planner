@@ -4,6 +4,18 @@
     <div class="header-actions">
       <a routerLink="/plants" class="btn btn-secondary">Pflanzenkatalog</a>
       <a routerLink="/gardens/new" class="btn btn-primary">+ New Garden</a>
+      @if (currentUser(); as u) {
+        <div class="user-chip" [title]="u.email">
+          @if (u.pictureUrl) {
+            <img [src]="u.pictureUrl" [alt]="u.name" referrerpolicy="no-referrer" />
+          } @else {
+            <span class="initial">{{ userInitial() }}</span>
+          }
+          <button class="btn-logout" type="button" (click)="logout()">Sign out</button>
+        </div>
+      } @else {
+        <a routerLink="/login" class="btn btn-secondary">Sign in</a>
+      }
     </div>
   </header>
 

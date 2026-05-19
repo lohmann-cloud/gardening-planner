@@ -1,7 +1,8 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
-import { RouterModule } from '@angular/router';
+import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import { Router, RouterModule } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { ApiService, Garden, Plant } from '../services/api.service';
+import { AuthService } from '../services/auth.service';
 import { plantColor, plantColorLight, plantIcon } from '../plant-utils';
 
 @Component({
@@ -12,13 +13,24 @@ import { plantColor, plantColorLight, plantIcon } from '../plant-utils';
 })
 export class DashboardComponent implements OnInit {
   private readonly api = inject(ApiService);
+  private readonly auth = inject(AuthService);
+  private readonly router = inject(Router);
 
   protected readonly Math = Math;
   protected readonly gardens = signal<Garden[]>([]);
   protected readonly bedPlants = signal<Map<string, Plant[]>>(new Map());
+  protected readonly currentUser = computed(() => this.auth.user());
+  protected readonly userInitial = computed(() => {
+    const u = this.auth.user();
+    return u?.name?.charAt(0).toUpperCase() ?? '?';
+  });
 
   ngOnInit() {
     this.loadGardens();
+  }
+
+  protected logout() {
+    this.auth.logout().subscribe(() => this.router.navigate(['/login']));
   }
 
   protected bedFill(bedId: string): string {

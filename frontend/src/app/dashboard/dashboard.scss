@@ -23,6 +23,45 @@
 .header-actions {
   display: flex;
   gap: 0.6rem;
+  align-items: center;
+}
+
+.user-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.2rem 0.5rem 0.2rem 0.2rem;
+  border: 1px solid var(--gray-200);
+  border-radius: 999px;
+  background: white;
+
+  img,
+  .initial {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    object-fit: cover;
+    background: var(--green-100);
+    color: var(--green-800);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 0.85rem;
+  }
+
+  .btn-logout {
+    background: transparent;
+    border: none;
+    padding: 0.2rem 0.4rem;
+    cursor: pointer;
+    font-size: 0.85rem;
+    color: var(--gray-600);
+
+    &:hover {
+      color: var(--gray-900);
+    }
+  }
 }
 
 .garden-grid {

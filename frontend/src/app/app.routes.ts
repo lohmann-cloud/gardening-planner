@@ -4,9 +4,11 @@ import { GardenCreateComponent } from './garden-create/garden-create';
 import { GardenLayoutComponent } from './garden-layout/garden-layout';
 import { BedPlannerComponent } from './bed-planner/bed-planner';
 import { PlantsComponent } from './plants/plants';
+import { LoginComponent } from './login/login';
 
 export const routes: Route[] = [
   { path: '', component: DashboardComponent },
+  { path: 'login', component: LoginComponent },
   { path: 'gardens/new', component: GardenCreateComponent },
   { path: 'gardens/:id', component: GardenLayoutComponent },
   { path: 'gardens/:id/beds/:bedId', component: BedPlannerComponent },

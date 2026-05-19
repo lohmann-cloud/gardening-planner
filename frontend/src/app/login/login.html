@@ -1,0 +1,32 @@
+<div class="login-page">
+  <div class="login-card">
+    <div class="brand">
+      <span class="leaf">&#127793;</span>
+      <h1>Garden Planner</h1>
+    </div>
+    <p class="lead">Sign in to plan your garden and share it with others.</p>
+
+    @if (hasClientId()) {
+      <div class="google-btn-wrapper">
+        <div #googleButton></div>
+      </div>
+    } @else {
+      <div class="config-warning">
+        <strong>Google login is not configured.</strong>
+        <p>
+          Set <code>googleClientId</code> in
+          <code>src/environments/environment.ts</code> and the
+          <code>GOOGLE_OAUTH_CLIENT_ID</code> env var on the backend, then
+          reload.
+        </p>
+      </div>
+    }
+
+    @if (busy()) { <p class="hint">Signing you in…</p> }
+    @if (error(); as msg) { <p class="error">{{ msg }}</p> }
+
+    <p class="muted">
+      <a routerLink="/">Continue without signing in</a>
+    </p>
+  </div>
+</div>
