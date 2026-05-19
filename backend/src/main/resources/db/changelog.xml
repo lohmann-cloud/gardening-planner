@@ -9,5 +9,6 @@
     <include file="db/changesets/V2__add_bed_rotation.sql"/>
     <include file="db/changesets/V3__seed_plants.sql"/>
     <include file="db/changesets/V4__add_zone_spacing_factor.sql"/>
+    <include file="db/changesets/V5__add_users_and_memberships.sql"/>
 
 </databaseChangeLog>
