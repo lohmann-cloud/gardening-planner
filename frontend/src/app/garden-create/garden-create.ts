@@ -1,5 +1,5 @@
 import { Component, inject, signal } from '@angular/core';
-import { Router } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { form, FormField, FormRoot, required, min } from '@angular/forms/signals';
 import { firstValueFrom } from 'rxjs';
 import { ApiService } from '../services/api.service';
@@ -13,7 +13,7 @@ interface GardenFormData {
 
 @Component({
   selector: 'app-garden-create',
-  imports: [FormField, FormRoot],
+  imports: [FormField, FormRoot, RouterModule],
   templateUrl: './garden-create.html',
   styleUrl: './garden-create.scss',
 })

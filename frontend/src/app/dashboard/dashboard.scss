@@ -1,42 +1,49 @@
 .dashboard {
-  max-width: 1000px;
+  max-width: 1100px;
   margin: 0 auto;
-  padding: 2rem;
+  padding: 2.5rem 2rem 4rem;
 }
 
 .dashboard-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-end;
   margin-bottom: 2rem;
+  gap: 1rem;
+  flex-wrap: wrap;
 
   h1 {
     margin: 0;
-    color: #2e7d32;
+    color: var(--green-800);
+    font-size: 2rem;
+    letter-spacing: -0.02em;
   }
 }
 
 .header-actions {
   display: flex;
-  gap: 0.75rem;
+  gap: 0.6rem;
 }
 
 .garden-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.25rem;
 }
 
 .garden-card {
   background: white;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
   overflow: hidden;
   position: relative;
-  transition: transform 0.15s;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
 
   &:hover {
-    transform: translateY(-2px);
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-md);
+    border-color: var(--green-200);
   }
 }
 
@@ -48,82 +55,100 @@
 
 .garden-preview {
   padding: 1rem;
-  background: #f5f5f5;
+  background: linear-gradient(180deg, var(--green-50), #ffffff 75%);
+  border-bottom: 1px solid var(--gray-100);
 
   svg {
     width: 100%;
-    height: 140px;
+    height: 150px;
+    display: block;
   }
 }
 
 .garden-info {
-  padding: 1rem;
+  padding: 1rem 1.1rem 1.1rem;
 
   h3 {
     margin: 0 0 0.25rem;
+    font-size: 1.1rem;
+    color: var(--gray-900);
   }
 
   p {
     margin: 0;
-    color: #666;
-    font-size: 0.9rem;
+    color: var(--gray-600);
+    font-size: 0.85rem;
   }
 }
 
 .btn-delete {
   position: absolute;
-  top: 0.5rem;
-  right: 0.5rem;
-  background: rgba(255, 255, 255, 0.9);
-  border: none;
+  top: 0.55rem;
+  right: 0.55rem;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid var(--gray-200);
   border-radius: 50%;
   width: 28px;
   height: 28px;
   cursor: pointer;
   font-size: 1.1rem;
-  color: #999;
+  line-height: 1;
+  color: var(--gray-500);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s, background 0.15s, border-color 0.15s;
 
   &:hover {
-    color: #e53935;
+    color: var(--danger);
     background: white;
+    border-color: var(--danger);
   }
 }
 
 .btn {
   display: inline-block;
-  padding: 0.6rem 1.2rem;
-  border-radius: 8px;
+  padding: 0.55rem 1.1rem;
+  border-radius: var(--radius-sm);
   text-decoration: none;
-  font-weight: 500;
   cursor: pointer;
-  border: none;
+  border: 1px solid transparent;
+  font-size: 0.9rem;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
 }
 
 .btn-primary {
-  background: #2e7d32;
+  background: var(--green-700);
   color: white;
+  border-color: var(--green-700);
 
   &:hover {
-    background: #1b5e20;
+    background: var(--green-900);
+    border-color: var(--green-900);
   }
 }
 
 .btn-secondary {
-  background: #e0e0e0;
-  color: #333;
+  background: white;
+  color: var(--gray-800);
+  border-color: var(--gray-300);
 
   &:hover {
-    background: #bdbdbd;
+    background: var(--gray-100);
+    border-color: var(--gray-400);
   }
 }
 
 .empty-state {
   text-align: center;
-  padding: 4rem 2rem;
+  padding: 5rem 2rem;
+  border: 2px dashed var(--gray-300);
+  border-radius: var(--radius-lg);
+  background: white;
 
   p {
-    color: #666;
+    color: var(--gray-600);
     margin-bottom: 1rem;
-    font-size: 1.1rem;
+    font-size: 1.05rem;
   }
 }
