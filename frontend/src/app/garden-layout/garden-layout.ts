@@ -1,5 +1,6 @@
 import { Component, computed, ElementRef, inject, OnInit, signal, ViewChild } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
+import { forkJoin, of } from 'rxjs';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { form, FormField, min, required } from '@angular/forms/signals';
 import { ApiService, Garden, GardenBed, Obstacle } from '../services/api.service';
@@ -22,6 +23,7 @@ export class GardenLayoutComponent implements OnInit {
   private readonly router = inject(Router);
 
   protected readonly garden = signal<Garden | null>(null);
+  protected readonly plantedBedIds = signal<Set<string>>(new Set());
   protected readonly tool = signal<Tool>('select');
   protected readonly selectedBed = signal<GardenBed | null>(null);
   protected readonly selectedObstacle = signal<Obstacle | null>(null);
@@ -382,7 +384,19 @@ export class GardenLayoutComponent implements OnInit {
   }
 
   private loadGarden(id: string) {
-    this.api.getGarden(id).subscribe((g) => this.garden.set(g));
+    const year = new Date().getFullYear();
+    this.api.getGarden(id).subscribe((g) => {
+      this.garden.set(g);
+      if (!g.beds.length) return;
+      const planRequests = g.beds.map((b) => this.api.getPlantingPlan(id, b.id, year));
+      forkJoin(planRequests).subscribe((plans) => {
+        const planted = new Set<string>();
+        plans.forEach((plan, i) => {
+          if (plan.zones.length > 0 || plan.cells.length > 0) planted.add(g.beds[i].id);
+        });
+        this.plantedBedIds.set(planted);
+      });
+    });
   }
 
   private clearSelection() {
