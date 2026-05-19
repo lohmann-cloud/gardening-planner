@@ -1,8 +1,10 @@
 package de.gardenplanner.resource;
 
+import de.gardenplanner.auth.AccessControl;
 import de.gardenplanner.dto.PlantingCellRequest;
 import de.gardenplanner.dto.PlantingZoneRequest;
 import de.gardenplanner.entity.*;
+import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.*;
@@ -15,6 +17,9 @@ import java.util.UUID;
 @Consumes(MediaType.APPLICATION_JSON)
 public class PlantingResource {
 
+    @Inject
+    AccessControl access;
+
     @GET
     @Path("/{year}")
     @Transactional
@@ -22,6 +27,7 @@ public class PlantingResource {
             @PathParam("gardenId") UUID gardenId,
             @PathParam("bedId") UUID bedId,
             @PathParam("year") int year) {
+        access.requireMember(gardenId);
         GardenBed bed = requireBed(gardenId, bedId);
         PlantingPlan plan = PlantingPlan.findByBedAndYear(bedId, year);
         if (plan == null) {
@@ -40,6 +46,7 @@ public class PlantingResource {
             @PathParam("gardenId") UUID gardenId,
             @PathParam("bedId") UUID bedId,
             @PathParam("year") int year) {
+        access.requireEditor(gardenId);
         requireBed(gardenId, bedId);
         PlantingPlan plan = PlantingPlan.findByBedAndYear(bedId, year);
         if (plan == null) throw new NotFoundException("Planting plan not found");
@@ -55,6 +62,7 @@ public class PlantingResource {
             @PathParam("bedId") UUID bedId,
             @PathParam("year") int year,
             @Valid PlantingCellRequest req) {
+        access.requireEditor(gardenId);
         GardenBed bed = requireBed(gardenId, bedId);
         PlantingPlan plan = getOrCreatePlan(bed, year);
         Plant plant = Plant.findById(req.plantId);
@@ -76,6 +84,7 @@ public class PlantingResource {
             @PathParam("bedId") UUID bedId,
             @PathParam("year") int year,
             @PathParam("cellId") UUID cellId) {
+        access.requireEditor(gardenId);
         requireBed(gardenId, bedId);
         PlantingCell cell = PlantingCell.findById(cellId);
         if (cell == null) throw new NotFoundException("Cell not found");
@@ -91,6 +100,7 @@ public class PlantingResource {
             @PathParam("bedId") UUID bedId,
             @PathParam("year") int year,
             @Valid PlantingZoneRequest req) {
+        access.requireEditor(gardenId);
         GardenBed bed = requireBed(gardenId, bedId);
         PlantingPlan plan = getOrCreatePlan(bed, year);
         Plant plant = Plant.findById(req.plantId);
@@ -115,6 +125,7 @@ public class PlantingResource {
             @PathParam("bedId") UUID bedId,
             @PathParam("year") int year,
             @PathParam("zoneId") UUID zoneId) {
+        access.requireEditor(gardenId);
         requireBed(gardenId, bedId);
         PlantingZone zone = PlantingZone.findById(zoneId);
         if (zone == null) throw new NotFoundException("Zone not found");

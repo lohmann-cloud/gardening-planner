@@ -1,9 +1,11 @@
 package de.gardenplanner.resource;
 
+import de.gardenplanner.auth.AccessControl;
 import de.gardenplanner.dto.ObstaclePatchRequest;
 import de.gardenplanner.dto.ObstacleRequest;
 import de.gardenplanner.entity.Garden;
 import de.gardenplanner.entity.Obstacle;
+import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.*;
@@ -17,8 +19,12 @@ import java.util.UUID;
 @Consumes(MediaType.APPLICATION_JSON)
 public class ObstacleResource {
 
+    @Inject
+    AccessControl access;
+
     @GET
     public List<Obstacle> getAll(@PathParam("gardenId") UUID gardenId) {
+        access.requireMember(gardenId);
         Garden garden = Garden.findById(gardenId);
         if (garden == null) throw new NotFoundException("Garden not found");
         return Obstacle.list("garden.id", gardenId);
@@ -27,6 +33,7 @@ public class ObstacleResource {
     @POST
     @Transactional
     public Response create(@PathParam("gardenId") UUID gardenId, @Valid ObstacleRequest req) {
+        access.requireEditor(gardenId);
         Garden garden = Garden.findById(gardenId);
         if (garden == null) throw new NotFoundException("Garden not found");
         Obstacle obstacle = new Obstacle();
@@ -44,6 +51,7 @@ public class ObstacleResource {
     @Path("/{id}")
     @Transactional
     public Obstacle update(@PathParam("gardenId") UUID gardenId, @PathParam("id") UUID id, ObstaclePatchRequest req) {
+        access.requireEditor(gardenId);
         Obstacle obstacle = Obstacle.findById(id);
         if (obstacle == null || !obstacle.garden.id.equals(gardenId)) throw new NotFoundException("Obstacle not found");
         if (req.label != null) obstacle.label = req.label;
@@ -58,6 +66,7 @@ public class ObstacleResource {
     @Path("/{id}")
     @Transactional
     public Response delete(@PathParam("gardenId") UUID gardenId, @PathParam("id") UUID id) {
+        access.requireEditor(gardenId);
         Obstacle obstacle = Obstacle.findById(id);
         if (obstacle == null || !obstacle.garden.id.equals(gardenId)) throw new NotFoundException("Obstacle not found");
         obstacle.delete();

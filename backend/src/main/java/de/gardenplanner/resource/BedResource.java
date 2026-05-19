@@ -1,9 +1,11 @@
 package de.gardenplanner.resource;
 
+import de.gardenplanner.auth.AccessControl;
 import de.gardenplanner.dto.BedPatchRequest;
 import de.gardenplanner.dto.BedRequest;
 import de.gardenplanner.entity.Garden;
 import de.gardenplanner.entity.GardenBed;
+import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.*;
@@ -17,8 +19,12 @@ import java.util.UUID;
 @Consumes(MediaType.APPLICATION_JSON)
 public class BedResource {
 
+    @Inject
+    AccessControl access;
+
     @GET
     public List<GardenBed> getAll(@PathParam("gardenId") UUID gardenId) {
+        access.requireMember(gardenId);
         Garden garden = Garden.findById(gardenId);
         if (garden == null) throw new NotFoundException("Garden not found");
         return GardenBed.list("garden.id", gardenId);
@@ -27,6 +33,7 @@ public class BedResource {
     @POST
     @Transactional
     public Response create(@PathParam("gardenId") UUID gardenId, @Valid BedRequest req) {
+        access.requireEditor(gardenId);
         Garden garden = Garden.findById(gardenId);
         if (garden == null) throw new NotFoundException("Garden not found");
         GardenBed bed = new GardenBed();
@@ -45,6 +52,7 @@ public class BedResource {
     @Path("/{id}")
     @Transactional
     public GardenBed update(@PathParam("gardenId") UUID gardenId, @PathParam("id") UUID id, BedPatchRequest req) {
+        access.requireEditor(gardenId);
         GardenBed bed = GardenBed.findById(id);
         if (bed == null || !bed.garden.id.equals(gardenId)) throw new NotFoundException("Bed not found");
         if (req.name != null) bed.name = req.name;
@@ -60,6 +68,7 @@ public class BedResource {
     @Path("/{id}")
     @Transactional
     public Response delete(@PathParam("gardenId") UUID gardenId, @PathParam("id") UUID id) {
+        access.requireEditor(gardenId);
         GardenBed bed = GardenBed.findById(id);
         if (bed == null || !bed.garden.id.equals(gardenId)) throw new NotFoundException("Bed not found");
         bed.delete();
