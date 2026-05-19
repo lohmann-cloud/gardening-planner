@@ -290,6 +290,7 @@
   justify-content: center;
   font-size: 10px;
   box-sizing: border-box;
+  position: relative;
 
   .has-plant & { cursor: crosshair; }
   &:hover { filter: brightness(0.95); }
@@ -304,6 +305,25 @@
   line-height: 1;
 
   &.preview { opacity: 0.7; }
+}
+
+.zone-name-badge {
+  position: absolute;
+  top: 1px;
+  left: 1px;
+  font-size: 8px;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+  background: white;
+  border: 1px solid;
+  border-radius: 2px;
+  padding: 1px 2px;
+  pointer-events: none;
+  z-index: 2;
+  max-width: 80px;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 // ─── Legend ──────────────────────────────────────────────────────────────────

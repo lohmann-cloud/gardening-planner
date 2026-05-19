@@ -150,12 +150,16 @@
                     class="cell zone-cell"
                     [class.plant-spot]="plantSpotMap().has(col + ',' + row)"
                     [style.background]="plantSpotMap().has(col + ',' + row) ? zv.color : zv.colorLight"
+                    [style.box-shadow]="'inset 0 0 0 1px ' + zv.color"
                     [title]="zv.zone.plant.name + (plantSpotMap().has(col + ',' + row) ? ' (Pflanzstelle)' : ' (Bereich)')"
                     (mousedown)="onCellMouseDown(col, row, $event)"
                     (mouseenter)="onCellMouseEnter(col, row)"
                   >
                     @if (plantSpotMap().has(col + ',' + row)) {
                       <span class="spot-marker">{{ zv.icon }}</span>
+                    }
+                    @if (col === zv.zone.minCol && row === zv.zone.minRow) {
+                      <span class="zone-name-badge" [style.border-color]="zv.color" [style.color]="zv.color">{{ zv.zone.plant.name }}</span>
                     }
                   </div>
                 } @else {

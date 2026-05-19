@@ -353,10 +353,7 @@ export class BedPlannerComponent implements OnInit {
   }
 
   protected plantColor(plant: Plant): string {
-    let hash = 0;
-    for (let i = 0; i < plant.name.length; i++) hash = plant.name.charCodeAt(i) + ((hash << 5) - hash);
-    const h = (((hash % 120) + 120) % 120) + 60;
-    return `hsl(${h}, 55%, 55%)`;
+    return `hsl(${this.plantHue(plant)}, 65%, 45%)`;
   }
 
   protected plantIcon(plant: Plant): string {
@@ -372,10 +369,13 @@ export class BedPlannerComponent implements OnInit {
   }
 
   protected plantColorLight(plant: Plant): string {
+    return `hsl(${this.plantHue(plant)}, 55%, 85%)`;
+  }
+
+  private plantHue(plant: Plant): number {
     let hash = 0;
-    for (let i = 0; i < plant.name.length; i++) hash = plant.name.charCodeAt(i) + ((hash << 5) - hash);
-    const h = (((hash % 120) + 120) % 120) + 60;
-    return `hsl(${h}, 45%, 88%)`;
+    for (let i = 0; i < plant.id.length; i++) hash = plant.id.charCodeAt(i) + ((hash << 5) - hash);
+    return ((hash % 360) + 360) % 360;
   }
 
   private computePositionsInArea(minCol: number, minRow: number, maxCol: number, maxRow: number, plant: Plant, factor = this.spacingFactor()): { col: number; row: number }[] {
