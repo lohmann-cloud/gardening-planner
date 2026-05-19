@@ -3,7 +3,8 @@ import { DecimalPipe } from '@angular/common';
 import { forkJoin } from 'rxjs';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { form, FormField, min, required } from '@angular/forms/signals';
-import { ApiService, Garden, GardenBed, Obstacle, Plant } from '../services/api.service';
+import { ApiService, Garden, GardenBed, Membership, Obstacle, Plant } from '../services/api.service';
+import { AuthService } from '../services/auth.service';
 import { plantColor, plantColorLight, plantIcon } from '../plant-utils';
 
 type Tool = 'select' | 'bed' | 'obstacle';
@@ -20,6 +21,7 @@ export class GardenLayoutComponent implements OnInit {
   @ViewChild('gardenSvg') private svgRef!: ElementRef<SVGSVGElement>;
 
   private readonly api = inject(ApiService);
+  private readonly auth = inject(AuthService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
 
@@ -30,6 +32,14 @@ export class GardenLayoutComponent implements OnInit {
   protected readonly selectedObstacle = signal<Obstacle | null>(null);
   protected readonly editingBed = signal(false);
   protected readonly editingGarden = signal(false);
+  protected readonly memberships = signal<Membership[]>([]);
+  protected readonly inviteEmail = signal('');
+  protected readonly inviteError = signal<string | null>(null);
+  protected readonly inviteBusy = signal(false);
+  protected readonly currentUserId = signal<string | null>(null);
+  protected readonly isOwner = computed(() =>
+    this.memberships().some((m) => m.role === 'OWNER' && m.userId === this.currentUserId())
+  );
   protected readonly ghost = signal<{ x: number; y: number; w: number; h: number; type: string } | null>(null);
 
   // Viewport: pan in pixels, zoom as scale factor
@@ -103,6 +113,7 @@ export class GardenLayoutComponent implements OnInit {
 
   ngOnInit() {
     const id = this.route.snapshot.paramMap.get('id')!;
+    this.currentUserId.set(this.auth.user()?.id ?? null);
     this.loadGarden(id);
   }
 
@@ -345,7 +356,46 @@ export class GardenLayoutComponent implements OnInit {
       widthM: g.widthM,
       lengthM: g.lengthM,
     });
+    this.inviteEmail.set('');
+    this.inviteError.set(null);
     this.editingGarden.set(true);
+    this.api.getMemberships(g.id).subscribe((m) => this.memberships.set(m));
+  }
+
+  protected inviteMember() {
+    const g = this.garden();
+    const email = this.inviteEmail().trim();
+    if (!g || !email) return;
+    this.inviteError.set(null);
+    this.inviteBusy.set(true);
+    this.api.inviteMember(g.id, { email, role: 'COLLABORATOR' }).subscribe({
+      next: (m) => {
+        this.inviteBusy.set(false);
+        this.inviteEmail.set('');
+        this.memberships.update((list) => {
+          const existing = list.findIndex((x) => x.userId === m.userId);
+          if (existing >= 0) {
+            const copy = [...list];
+            copy[existing] = m;
+            return copy;
+          }
+          return [...list, m];
+        });
+      },
+      error: (err) => {
+        this.inviteBusy.set(false);
+        this.inviteError.set(err?.error?.message ?? 'Could not invite that user');
+      },
+    });
+  }
+
+  protected removeMember(m: Membership) {
+    const g = this.garden();
+    if (!g) return;
+    if (!confirm(`Remove ${m.name || m.email} from this garden?`)) return;
+    this.api.removeMember(g.id, m.userId).subscribe(() => {
+      this.memberships.update((list) => list.filter((x) => x.userId !== m.userId));
+    });
   }
 
   protected saveEditGarden() {

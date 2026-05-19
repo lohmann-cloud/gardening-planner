@@ -211,8 +211,53 @@
             <label>Width (m)<input type="number" [formField]="editGardenForm.widthM" step="0.5" min="1" /></label>
             <label>Length (m)<input type="number" [formField]="editGardenForm.lengthM" step="0.5" min="1" /></label>
           </div>
+
+          <h3 class="section-title">People with access</h3>
+          <ul class="member-list">
+            @for (m of memberships(); track m.userId) {
+              <li class="member-row">
+                @if (m.pictureUrl) {
+                  <img [src]="m.pictureUrl" [alt]="m.name" referrerpolicy="no-referrer" />
+                } @else {
+                  <span class="initial">{{ m.name.charAt(0).toUpperCase() }}</span>
+                }
+                <div class="member-info">
+                  <div class="member-name">{{ m.name }}</div>
+                  <div class="member-email">{{ m.email }}</div>
+                </div>
+                <span class="role-badge" [class.owner]="m.role === 'OWNER'">{{ m.role }}</span>
+                @if (isOwner() && m.role !== 'OWNER') {
+                  <button class="btn-icon" type="button" (click)="removeMember(m)" title="Remove">&times;</button>
+                }
+              </li>
+            }
+          </ul>
+          @if (isOwner()) {
+            <div class="invite-row">
+              <input
+                type="email"
+                placeholder="invite by email"
+                [value]="inviteEmail()"
+                (input)="inviteEmail.set($any($event.target).value)"
+                (keydown.enter)="inviteMember()"
+              />
+              <button
+                class="btn-primary"
+                type="button"
+                (click)="inviteMember()"
+                [disabled]="!inviteEmail() || inviteBusy()"
+              >
+                {{ inviteBusy() ? '…' : 'Invite' }}
+              </button>
+            </div>
+            @if (inviteError(); as e) { <p class="error">{{ e }}</p> }
+            <p class="hint">The person needs to sign in once before you can invite them.</p>
+          }
+
           <div class="modal-actions">
-            <button class="btn-danger" type="button" (click)="deleteGarden()">Delete Garden</button>
+            @if (isOwner()) {
+              <button class="btn-danger" type="button" (click)="deleteGarden()">Delete Garden</button>
+            }
             <span class="spacer"></span>
             <button class="btn-secondary" type="button" (click)="cancelEditGarden()">Cancel</button>
             <button class="btn-primary" type="button" (click)="saveEditGarden()">Save</button>

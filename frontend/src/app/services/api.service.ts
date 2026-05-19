@@ -87,6 +87,18 @@ export interface PlantingPlan {
   zones: PlantingZone[];
 }
 
+export type GardenRole = 'OWNER' | 'COLLABORATOR' | 'VIEWER';
+
+export interface Membership {
+  id: string;
+  userId: string;
+  email: string;
+  name: string;
+  pictureUrl?: string;
+  role: GardenRole;
+  createdAt: string;
+}
+
 const API = environment.apiUrl;
 
 @Injectable({ providedIn: 'root' })
@@ -176,5 +188,18 @@ export class ApiService {
 
   removePlantingZone(gardenId: string, bedId: string, year: number, zoneId: string) {
     return this.http.delete(`${API}/gardens/${gardenId}/beds/${bedId}/plantings/${year}/zones/${zoneId}`);
+  }
+
+  // Memberships
+  getMemberships(gardenId: string) {
+    return this.http.get<Membership[]>(`${API}/gardens/${gardenId}/memberships`);
+  }
+
+  inviteMember(gardenId: string, data: { email: string; role?: GardenRole }) {
+    return this.http.post<Membership>(`${API}/gardens/${gardenId}/memberships`, data);
+  }
+
+  removeMember(gardenId: string, userId: string) {
+    return this.http.delete(`${API}/gardens/${gardenId}/memberships/${userId}`);
   }
 }

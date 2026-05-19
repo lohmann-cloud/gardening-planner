@@ -96,6 +96,120 @@
   }
 }
 
+.section-title {
+  margin: 1.25rem 0 0.5rem;
+  font-size: 0.95rem;
+  color: #333;
+}
+
+.member-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.member-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.4rem 0.5rem;
+  border: 1px solid #eee;
+  border-radius: 8px;
+
+  img,
+  .initial {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+    background: #e8f5e9;
+    color: #2e7d32;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 0.85rem;
+  }
+
+  .member-info {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .member-name {
+    font-weight: 500;
+    font-size: 0.9rem;
+    color: #222;
+  }
+
+  .member-email {
+    font-size: 0.8rem;
+    color: #888;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .role-badge {
+    font-size: 0.7rem;
+    padding: 0.15rem 0.5rem;
+    border-radius: 999px;
+    background: #f0f0f0;
+    color: #555;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+
+    &.owner {
+      background: #e8f5e9;
+      color: #2e7d32;
+    }
+  }
+}
+
+.btn-icon {
+  background: transparent;
+  border: 1px solid transparent;
+  font-size: 1.1rem;
+  line-height: 1;
+  color: #999;
+  cursor: pointer;
+  padding: 0 0.4rem;
+  border-radius: 50%;
+
+  &:hover {
+    color: #c62828;
+    border-color: #f4c7c7;
+  }
+}
+
+.invite-row {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.4rem;
+
+  input {
+    flex: 1;
+    padding: 0.4rem 0.5rem;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 0.9rem;
+
+    &:focus {
+      outline: none;
+      border-color: #4caf50;
+    }
+  }
+}
+
+.error {
+  margin: 0.5rem 0 0;
+  font-size: 0.8rem;
+  color: #c62828;
+}
+
 .layout-body {
   display: flex;
   flex: 1;

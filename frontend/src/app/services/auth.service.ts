@@ -1,6 +1,7 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../environments/environment';
+import { firstValueFrom } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { Observable, of } from 'rxjs';
 
@@ -32,22 +33,20 @@ export class AuthService {
   readonly isAuthenticated = computed(() => !!this.userSignal());
   readonly ready = computed(() => this.readySignal());
 
-  init(): void {
+  async init(): Promise<void> {
     const token = this.tokenSignal();
     if (!token) {
       this.readySignal.set(true);
       return;
     }
-    this.http.get<CurrentUser>(`${API}/auth/me`).subscribe({
-      next: (u) => {
-        this.userSignal.set(u);
-        this.readySignal.set(true);
-      },
-      error: () => {
-        this.clearToken();
-        this.readySignal.set(true);
-      },
-    });
+    try {
+      const u = await firstValueFrom(this.http.get<CurrentUser>(`${API}/auth/me`));
+      this.userSignal.set(u);
+    } catch {
+      this.clearToken();
+    } finally {
+      this.readySignal.set(true);
+    }
   }
 
   loginWithGoogle(idToken: string): Observable<AuthResponse> {

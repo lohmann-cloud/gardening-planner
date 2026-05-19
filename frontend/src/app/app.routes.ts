@@ -5,12 +5,13 @@ import { GardenLayoutComponent } from './garden-layout/garden-layout';
 import { BedPlannerComponent } from './bed-planner/bed-planner';
 import { PlantsComponent } from './plants/plants';
 import { LoginComponent } from './login/login';
+import { authGuard } from './services/auth.guard';
 
 export const routes: Route[] = [
-  { path: '', component: DashboardComponent },
   { path: 'login', component: LoginComponent },
-  { path: 'gardens/new', component: GardenCreateComponent },
-  { path: 'gardens/:id', component: GardenLayoutComponent },
-  { path: 'gardens/:id/beds/:bedId', component: BedPlannerComponent },
-  { path: 'plants', component: PlantsComponent },
+  { path: '', component: DashboardComponent, canActivate: [authGuard] },
+  { path: 'gardens/new', component: GardenCreateComponent, canActivate: [authGuard] },
+  { path: 'gardens/:id', component: GardenLayoutComponent, canActivate: [authGuard] },
+  { path: 'gardens/:id/beds/:bedId', component: BedPlannerComponent, canActivate: [authGuard] },
+  { path: 'plants', component: PlantsComponent, canActivate: [authGuard] },
 ];
