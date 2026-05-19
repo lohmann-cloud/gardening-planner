@@ -72,8 +72,8 @@ public class AuthResource {
     @POST
     @Path("/logout")
     public Response logout() {
-        if (currentUser.token != null) {
-            sessions.revoke(currentUser.token);
+        if (currentUser.getToken() != null) {
+            sessions.revoke(currentUser.getToken());
         }
         return Response.noContent().build();
     }

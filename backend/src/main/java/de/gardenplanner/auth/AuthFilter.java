@@ -40,8 +40,8 @@ public class AuthFilter implements ContainerRequestFilter {
             token.length() > 8 ? token.substring(0, 8) + "…" : token,
             userId);
         if (userId != null) {
-            currentUser.id = userId;
-            currentUser.token = token;
+            currentUser.setId(userId);
+            currentUser.setToken(token);
         }
     }
 }
