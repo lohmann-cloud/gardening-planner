@@ -101,11 +101,6 @@
             (mouseup)="onCanvasMouseUp($event)"
             (mouseleave)="cancelDrag()"
           >
-            <defs>
-              <pattern id="planted-dots" patternUnits="userSpaceOnUse" width="0.25" height="0.25">
-                <circle cx="0.125" cy="0.125" r="0.04" fill="#2e7d32" opacity="0.55" />
-              </pattern>
-            </defs>
             <rect [attr.width]="g.widthM" [attr.height]="g.lengthM" fill="#e8f5e9" />
 
             @for (x of gridLinesX(); track x) {
@@ -151,25 +146,29 @@
               >
                 <rect
                   [attr.x]="bx" [attr.y]="by" [attr.width]="b.widthM" [attr.height]="b.lengthM"
-                  fill="#a5d6a7" stroke="#2e7d32"
+                  [attr.fill]="bedFill(b.id)"
+                  [attr.stroke]="bedStroke(b.id)"
                   [attr.stroke-width]="selectedBed()?.id === b.id ? 0.06 : 0.03"
                   [attr.stroke-dasharray]="selectedBed()?.id === b.id ? '0.1 0.05' : 'none'"
                   [attr.opacity]="isDragging ? 0.7 : 1"
                 />
-                @if (plantedBedIds().has(b.id)) {
-                  <rect
-                    [attr.x]="bx" [attr.y]="by" [attr.width]="b.widthM" [attr.height]="b.lengthM"
-                    fill="url(#planted-dots)" pointer-events="none"
-                    [attr.opacity]="isDragging ? 0.7 : 1"
-                  />
-                }
+                @let icons = bedIconText(b.id);
                 <text
-                  [attr.x]="cx" [attr.y]="cy"
+                  [attr.x]="cx" [attr.y]="icons ? cy - Math.min(b.widthM, b.lengthM) * 0.1 : cy"
                   text-anchor="middle" dominant-baseline="central"
-                  [attr.font-size]="Math.min(b.widthM, b.lengthM) * 0.3" fill="#1b5e20"
+                  [attr.font-size]="Math.min(b.widthM, b.lengthM) * 0.28" fill="#1b5e20"
                   [attr.opacity]="isDragging ? 0.7 : 1"
                   pointer-events="none"
                 >{{ b.name }}</text>
+                @if (icons) {
+                  <text
+                    [attr.x]="cx" [attr.y]="cy + Math.min(b.widthM, b.lengthM) * 0.18"
+                    text-anchor="middle" dominant-baseline="central"
+                    [attr.font-size]="Math.min(b.widthM, b.lengthM) * 0.22"
+                    [attr.opacity]="isDragging ? 0.7 : 1"
+                    pointer-events="none"
+                  >{{ icons }}</text>
+                }
                 @if (tool() === 'select' && selectedBed()?.id === b.id) {
                   <line
                     [attr.x1]="cx" [attr.y1]="by"

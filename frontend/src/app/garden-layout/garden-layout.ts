@@ -1,9 +1,10 @@
 import { Component, computed, ElementRef, inject, OnInit, signal, ViewChild } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
-import { forkJoin, of } from 'rxjs';
+import { forkJoin } from 'rxjs';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { form, FormField, min, required } from '@angular/forms/signals';
-import { ApiService, Garden, GardenBed, Obstacle } from '../services/api.service';
+import { ApiService, Garden, GardenBed, Obstacle, Plant } from '../services/api.service';
+import { plantColor, plantColorLight, plantIcon } from '../plant-utils';
 
 type Tool = 'select' | 'bed' | 'obstacle';
 
@@ -23,7 +24,7 @@ export class GardenLayoutComponent implements OnInit {
   private readonly router = inject(Router);
 
   protected readonly garden = signal<Garden | null>(null);
-  protected readonly plantedBedIds = signal<Set<string>>(new Set());
+  protected readonly bedPlants = signal<Map<string, Plant[]>>(new Map());
   protected readonly tool = signal<Tool>('select');
   protected readonly selectedBed = signal<GardenBed | null>(null);
   protected readonly selectedObstacle = signal<Obstacle | null>(null);
@@ -383,6 +384,22 @@ export class GardenLayoutComponent implements OnInit {
     this.zoom.set(newZoom);
   }
 
+  protected bedFill(bedId: string): string {
+    const plants = this.bedPlants().get(bedId);
+    return plants?.length ? plantColorLight(plants[0]) : '#a5d6a7';
+  }
+
+  protected bedStroke(bedId: string): string {
+    const plants = this.bedPlants().get(bedId);
+    return plants?.length ? plantColor(plants[0]) : '#2e7d32';
+  }
+
+  protected bedIconText(bedId: string): string {
+    const plants = this.bedPlants().get(bedId);
+    if (!plants?.length) return '';
+    return plants.slice(0, 3).map(p => plantIcon(p)).join('');
+  }
+
   private loadGarden(id: string) {
     const year = new Date().getFullYear();
     this.api.getGarden(id).subscribe((g) => {
@@ -390,11 +407,19 @@ export class GardenLayoutComponent implements OnInit {
       if (!g.beds.length) return;
       const planRequests = g.beds.map((b) => this.api.getPlantingPlan(id, b.id, year));
       forkJoin(planRequests).subscribe((plans) => {
-        const planted = new Set<string>();
+        const map = new Map<string, Plant[]>();
         plans.forEach((plan, i) => {
-          if (plan.zones.length > 0 || plan.cells.length > 0) planted.add(g.beds[i].id);
+          const seen = new Set<string>();
+          const plants: Plant[] = [];
+          for (const z of plan.zones) {
+            if (!seen.has(z.plant.id)) { seen.add(z.plant.id); plants.push(z.plant); }
+          }
+          for (const c of plan.cells) {
+            if (!seen.has(c.plant.id)) { seen.add(c.plant.id); plants.push(c.plant); }
+          }
+          if (plants.length) map.set(g.beds[i].id, plants);
         });
-        this.plantedBedIds.set(planted);
+        this.bedPlants.set(map);
       });
     });
   }

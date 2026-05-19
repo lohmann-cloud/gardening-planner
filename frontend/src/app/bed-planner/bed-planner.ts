@@ -2,6 +2,7 @@ import { Component, computed, ElementRef, inject, OnInit, signal, ViewChild } fr
 import { DecimalPipe } from '@angular/common';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { ApiService, Garden, GardenBed, Plant, PlantingPlan, PlantingZone } from '../services/api.service';
+import { plantColor, plantColorLight, plantIcon } from '../plant-utils';
 
 const CELL_CM = 5;
 const CELL_PX = 20;
@@ -352,31 +353,9 @@ export class BedPlannerComponent implements OnInit {
     }
   }
 
-  protected plantColor(plant: Plant): string {
-    return `hsl(${this.plantHue(plant)}, 65%, 45%)`;
-  }
-
-  protected plantIcon(plant: Plant): string {
-    switch (plant.category) {
-      case 'VEGETABLE': return '\u{1F955}';
-      case 'FRUIT':     return '\u{1F353}';
-      case 'HERB':      return '\u{1F33F}';
-      case 'FLOWER':    return '\u{1F338}';
-      case 'TREE':      return '\u{1F332}';
-      case 'SHRUB':     return '\u{1F333}';
-      default:          return '\u{1F331}';
-    }
-  }
-
-  protected plantColorLight(plant: Plant): string {
-    return `hsl(${this.plantHue(plant)}, 55%, 85%)`;
-  }
-
-  private plantHue(plant: Plant): number {
-    let hash = 0;
-    for (let i = 0; i < plant.id.length; i++) hash = plant.id.charCodeAt(i) + ((hash << 5) - hash);
-    return ((hash % 360) + 360) % 360;
-  }
+  protected plantColor(plant: Plant): string { return plantColor(plant); }
+  protected plantColorLight(plant: Plant): string { return plantColorLight(plant); }
+  protected plantIcon(plant: Plant): string { return plantIcon(plant); }
 
   private computePositionsInArea(minCol: number, minRow: number, maxCol: number, maxRow: number, plant: Plant, factor = this.spacingFactor()): { col: number; row: number }[] {
     const sCol = Math.max(1, Math.round(plant.spacingCm * factor / CELL_CM));

@@ -25,16 +25,27 @@
                   stroke-width="0.05"
                 />
                 @for (b of g.beds; track b.id) {
-                  <g [attr.transform]="'rotate(' + (b.rotationDeg ?? 0) + ',' + (b.xM + b.widthM / 2) + ',' + (b.yM + b.lengthM / 2) + ')'">
+                  @let cx = b.xM + b.widthM / 2;
+                  @let cy = b.yM + b.lengthM / 2;
+                  @let icons = bedIconText(b.id);
+                  <g [attr.transform]="'rotate(' + (b.rotationDeg ?? 0) + ',' + cx + ',' + cy + ')'">
                     <rect
                       [attr.x]="b.xM"
                       [attr.y]="b.yM"
                       [attr.width]="b.widthM"
                       [attr.height]="b.lengthM"
-                      fill="#a5d6a7"
-                      stroke="#388e3c"
+                      [attr.fill]="bedFill(b.id)"
+                      [attr.stroke]="bedStroke(b.id)"
                       stroke-width="0.03"
                     />
+                    @if (icons) {
+                      <text
+                        [attr.x]="cx" [attr.y]="cy"
+                        text-anchor="middle" dominant-baseline="central"
+                        [attr.font-size]="Math.min(b.widthM, b.lengthM) * 0.45"
+                        pointer-events="none"
+                      >{{ icons }}</text>
+                    }
                   </g>
                 }
                 @for (o of g.obstacles; track o.id) {
