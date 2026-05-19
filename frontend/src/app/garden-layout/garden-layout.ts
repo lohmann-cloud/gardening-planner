@@ -34,6 +34,7 @@ export class GardenLayoutComponent implements OnInit {
   protected readonly editingGarden = signal(false);
   protected readonly memberships = signal<Membership[]>([]);
   protected readonly inviteEmail = signal('');
+  protected readonly inviteRole = signal<'COLLABORATOR' | 'VIEWER'>('COLLABORATOR');
   protected readonly inviteError = signal<string | null>(null);
   protected readonly inviteBusy = signal(false);
   protected readonly currentUserId = signal<string | null>(null);
@@ -368,7 +369,7 @@ export class GardenLayoutComponent implements OnInit {
     if (!g || !email) return;
     this.inviteError.set(null);
     this.inviteBusy.set(true);
-    this.api.inviteMember(g.id, { email, role: 'COLLABORATOR' }).subscribe({
+    this.api.inviteMember(g.id, { email, role: this.inviteRole() }).subscribe({
       next: (m) => {
         this.inviteBusy.set(false);
         this.inviteEmail.set('');

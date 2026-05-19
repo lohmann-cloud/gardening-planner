@@ -215,15 +215,27 @@
           <h3 class="section-title">People with access</h3>
           <ul class="member-list">
             @for (m of memberships(); track m.userId) {
-              <li class="member-row">
-                @if (m.pictureUrl) {
+              <li class="member-row" [class.pending]="m.pending">
+                @if (m.pictureUrl && !m.pending) {
                   <img [src]="m.pictureUrl" [alt]="m.name" referrerpolicy="no-referrer" />
                 } @else {
-                  <span class="initial">{{ m.name.charAt(0).toUpperCase() }}</span>
+                  <span class="initial">{{ (m.pending ? m.email : m.name).charAt(0).toUpperCase() }}</span>
                 }
                 <div class="member-info">
-                  <div class="member-name">{{ m.name }}</div>
-                  <div class="member-email">{{ m.email }}</div>
+                  <div class="member-name">
+                    @if (m.pending) {
+                      {{ m.email }}
+                    } @else {
+                      {{ m.name }}
+                    }
+                  </div>
+                  <div class="member-email">
+                    @if (m.pending) {
+                      <em>noch nicht angemeldet</em>
+                    } @else {
+                      {{ m.email }}
+                    }
+                  </div>
                 </div>
                 <span class="role-badge" [class.owner]="m.role === 'OWNER'">{{ m.role }}</span>
                 @if (isOwner() && m.role !== 'OWNER') {
@@ -241,6 +253,14 @@
                 (input)="inviteEmail.set($any($event.target).value)"
                 (keydown.enter)="inviteMember()"
               />
+              <select
+                [value]="inviteRole()"
+                (change)="inviteRole.set($any($event.target).value)"
+                title="Role"
+              >
+                <option value="COLLABORATOR">Editor</option>
+                <option value="VIEWER">Viewer</option>
+              </select>
               <button
                 class="btn-primary"
                 type="button"
@@ -251,7 +271,10 @@
               </button>
             </div>
             @if (inviteError(); as e) { <p class="error">{{ e }}</p> }
-            <p class="hint">The person needs to sign in once before you can invite them.</p>
+            <p class="hint">
+              Eingeladene Personen bekommen Zugriff, sobald sie sich das erste Mal mit derselben
+              Google-Mail-Adresse anmelden.
+            </p>
           }
 
           <div class="modal-actions">

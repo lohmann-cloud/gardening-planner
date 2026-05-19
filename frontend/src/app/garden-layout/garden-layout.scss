@@ -119,6 +119,11 @@
   border: 1px solid #eee;
   border-radius: 8px;
 
+  &.pending {
+    background: #fffbea;
+    border-color: #ffe082;
+  }
+
   img,
   .initial {
     width: 32px;
@@ -192,10 +197,25 @@
 
   input {
     flex: 1;
+    min-width: 0;
     padding: 0.4rem 0.5rem;
     border: 1px solid #ccc;
     border-radius: 6px;
     font-size: 0.9rem;
+
+    &:focus {
+      outline: none;
+      border-color: #4caf50;
+    }
+  }
+
+  select {
+    padding: 0.4rem 0.4rem;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    background: white;
+    cursor: pointer;
 
     &:focus {
       outline: none;

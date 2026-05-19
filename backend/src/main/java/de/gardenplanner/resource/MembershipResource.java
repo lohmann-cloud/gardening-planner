@@ -38,11 +38,13 @@ public class MembershipResource {
         Garden garden = Garden.findById(gardenId);
         if (garden == null) throw new NotFoundException("Garden not found");
 
-        User invitee = User.findByEmail(req.email);
+        String email = req.email.trim().toLowerCase();
+        User invitee = User.findByEmail(email);
         if (invitee == null) {
-            throw new NotFoundException(
-                "No user with that email has signed in yet — ask them to sign in once first."
-            );
+            invitee = new User();
+            invitee.email = email;
+            invitee.name = email;
+            invitee.persist();
         }
 
         GardenMembership existing = GardenMembership.findForGardenAndUser(gardenId, invitee.id);

@@ -97,6 +97,7 @@ export interface Membership {
   pictureUrl?: string;
   role: GardenRole;
   createdAt: string;
+  pending: boolean;
 }
 
 const API = environment.apiUrl;

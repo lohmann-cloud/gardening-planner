@@ -14,6 +14,7 @@ public class MembershipDto {
     public String pictureUrl;
     public Role role;
     public Instant createdAt;
+    public boolean pending;
 
     public static MembershipDto from(GardenMembership m) {
         MembershipDto d = new MembershipDto();
@@ -24,6 +25,7 @@ public class MembershipDto {
         d.pictureUrl = m.user.pictureUrl;
         d.role = m.role;
         d.createdAt = m.createdAt;
+        d.pending = m.user.googleSub == null;
         return d;
     }
 }
