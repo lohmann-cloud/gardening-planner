@@ -43,6 +43,7 @@ export class GardenLayoutComponent implements OnInit {
   protected readonly draggedBed = signal<GardenBed | null>(null);
   private readonly dragOffset = signal<{ dx: number; dy: number } | null>(null);
   protected readonly dragPos = signal<{ x: number; y: number } | null>(null);
+  private lastValidDragPos = signal<{ x: number; y: number } | null>(null);
 
   // Bed rotation
   protected readonly rotatingBed = signal<GardenBed | null>(null);
@@ -126,7 +127,14 @@ export class GardenLayoutComponent implements OnInit {
       let y = this.snap(pt.y - offset.dy);
       x = Math.max(0, Math.min(x, g.widthM - dragging.widthM));
       y = Math.max(0, Math.min(y, g.lengthM - dragging.lengthM));
-      this.dragPos.set({ x, y });
+      const others = g.beds.filter((b) => b.id !== dragging.id);
+      ({ x, y } = this.snapToOtherBeds(x, y, dragging, others));
+      if (!this.wouldOverlap(x, y, dragging, others)) {
+        this.lastValidDragPos.set({ x, y });
+        this.dragPos.set({ x, y });
+      } else {
+        this.dragPos.set(this.lastValidDragPos() ?? { x, y });
+      }
       return;
     }
 
@@ -245,6 +253,7 @@ export class GardenLayoutComponent implements OnInit {
     this.draggedBed.set(bed);
     this.dragOffset.set({ dx: pt.x - bed.xM, dy: pt.y - bed.yM });
     this.dragPos.set({ x: bed.xM, y: bed.yM });
+    this.lastValidDragPos.set({ x: bed.xM, y: bed.yM });
   }
 
   protected onObstacleMouseDown(obstacle: Obstacle, event: MouseEvent) {
@@ -272,6 +281,7 @@ export class GardenLayoutComponent implements OnInit {
     this.draggedBed.set(null);
     this.dragOffset.set(null);
     this.dragPos.set(null);
+    this.lastValidDragPos.set(null);
     this.rotatingBed.set(null);
     this.rotationStartAngle.set(0);
     this.rotationBedStart.set(0);
@@ -379,6 +389,81 @@ export class GardenLayoutComponent implements OnInit {
     this.selectedBed.set(null);
     this.selectedObstacle.set(null);
     this.editingBed.set(false);
+  }
+
+  private snapToOtherBeds(x: number, y: number, bed: GardenBed, others: GardenBed[]): { x: number; y: number } {
+    const SNAP = 0.15;
+    let snappedX = x;
+    let snappedY = y;
+    const right = x + bed.widthM;
+    const bottom = y + bed.lengthM;
+    for (const o of others) {
+      if ((o.rotationDeg ?? 0) % 90 !== 0) continue;
+      const oRight = o.xM + o.widthM;
+      const oBottom = o.yM + o.lengthM;
+      if (Math.abs(x - oRight) < SNAP) snappedX = oRight;
+      else if (Math.abs(right - o.xM) < SNAP) snappedX = o.xM - bed.widthM;
+      else if (Math.abs(x - o.xM) < SNAP) snappedX = o.xM;
+      else if (Math.abs(right - oRight) < SNAP) snappedX = oRight - bed.widthM;
+      if (Math.abs(y - oBottom) < SNAP) snappedY = oBottom;
+      else if (Math.abs(bottom - o.yM) < SNAP) snappedY = o.yM - bed.lengthM;
+      else if (Math.abs(y - o.yM) < SNAP) snappedY = o.yM;
+      else if (Math.abs(bottom - oBottom) < SNAP) snappedY = oBottom - bed.lengthM;
+    }
+    return { x: snappedX, y: snappedY };
+  }
+
+  private wouldOverlap(x: number, y: number, bed: GardenBed, others: GardenBed[]): boolean {
+    const rot = bed.rotationDeg ?? 0;
+    for (const o of others) {
+      if (this.obbOverlap(x, y, bed.widthM, bed.lengthM, rot, o.xM, o.yM, o.widthM, o.lengthM, o.rotationDeg ?? 0)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private obbOverlap(ax: number, ay: number, aw: number, ah: number, aRot: number,
+                     bx: number, by: number, bw: number, bh: number, bRot: number): boolean {
+    const cornersA = this.obbCorners(ax, ay, aw, ah, aRot);
+    const cornersB = this.obbCorners(bx, by, bw, bh, bRot);
+    const aRad = aRot * Math.PI / 180;
+    const bRad = bRot * Math.PI / 180;
+    const axes: [number, number][] = [
+      [Math.cos(aRad), Math.sin(aRad)],
+      [-Math.sin(aRad), Math.cos(aRad)],
+      [Math.cos(bRad), Math.sin(bRad)],
+      [-Math.sin(bRad), Math.cos(bRad)],
+    ];
+    for (const axis of axes) {
+      const [aMin, aMax] = this.projectOBB(cornersA, axis);
+      const [bMin, bMax] = this.projectOBB(cornersB, axis);
+      if (aMax <= bMin || bMax <= aMin) return false;
+    }
+    return true;
+  }
+
+  private obbCorners(x: number, y: number, w: number, h: number, deg: number): [number, number][] {
+    const cx = x + w / 2;
+    const cy = y + h / 2;
+    const rad = deg * Math.PI / 180;
+    const cos = Math.cos(rad);
+    const sin = Math.sin(rad);
+    const hw = w / 2;
+    const hh = h / 2;
+    return ([ [-hw, -hh], [hw, -hh], [hw, hh], [-hw, hh] ] as [number, number][]).map(
+      ([lx, ly]): [number, number] => [cx + lx * cos - ly * sin, cy + lx * sin + ly * cos]
+    );
+  }
+
+  private projectOBB(corners: [number, number][], axis: [number, number]): [number, number] {
+    let min = Infinity, max = -Infinity;
+    for (const [cx, cy] of corners) {
+      const p = cx * axis[0] + cy * axis[1];
+      min = Math.min(min, p);
+      max = Math.max(max, p);
+    }
+    return [min, max];
   }
 
   private svgPoint(event: MouseEvent): { x: number; y: number } | null {
