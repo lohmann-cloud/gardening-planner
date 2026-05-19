@@ -1,39 +1,60 @@
-<div class="dashboard">
-  <header class="dashboard-header">
-    <h1>My Gardens</h1>
-    <div class="header-actions">
-      <a routerLink="/plants" class="btn btn-secondary">Pflanzenkatalog</a>
-      <a routerLink="/gardens/new" class="btn btn-primary">+ New Garden</a>
+<div class="dashboard max-w-5xl mx-auto px-6 pt-10 pb-16">
+  <header class="dashboard-header flex flex-wrap items-end justify-between gap-4 mb-8">
+    <div>
+      <p class="text-xs uppercase tracking-[0.15em] text-cream-500 mb-1">
+        Willkommen zurück
+      </p>
+      <h1 class="text-3xl md:text-4xl font-bold text-leaf-800 tracking-tight m-0">
+        Meine Gärten
+      </h1>
+    </div>
+    <div class="header-actions flex items-center gap-2.5 flex-wrap">
+      <a routerLink="/plants" class="btn btn-secondary btn-sm">
+        <span aria-hidden="true">🌿</span>
+        Pflanzenkatalog
+      </a>
+      <a routerLink="/gardens/new" class="btn btn-primary btn-sm">
+        <span aria-hidden="true">+</span>
+        Neuer Garten
+      </a>
       @if (currentUser(); as u) {
-        <div class="user-chip" [title]="u.email">
+        <div class="user-chip inline-flex items-center gap-2 pl-1 pr-3 py-1 rounded-full border border-cream-200 bg-white shadow-sm" [title]="u.email">
           @if (u.pictureUrl) {
-            <img [src]="u.pictureUrl" [alt]="u.name" referrerpolicy="no-referrer" />
+            <img [src]="u.pictureUrl" [alt]="u.name" referrerpolicy="no-referrer"
+                 class="w-7 h-7 rounded-full object-cover" />
           } @else {
-            <span class="initial">{{ userInitial() }}</span>
+            <span class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-leaf-100 text-leaf-700 text-xs font-bold">
+              {{ userInitial() }}
+            </span>
           }
-          <button class="btn-logout" type="button" (click)="logout()">Sign out</button>
+          <button class="text-xs text-cream-500 hover:text-cream-800 transition-colors font-semibold"
+                  type="button" (click)="logout()">
+            Abmelden
+          </button>
         </div>
       } @else {
-        <a routerLink="/login" class="btn btn-secondary">Sign in</a>
+        <a routerLink="/login" class="btn btn-secondary btn-sm">Anmelden</a>
       }
     </div>
   </header>
 
   @if (gardens().length) {
-    <div class="garden-grid">
+    <div class="garden-grid grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-5">
       @for (g of gardens(); track g.id) {
-        <div class="garden-card">
-          <a [routerLink]="['/gardens', g.id]" class="garden-card-link">
-            <div class="garden-preview">
+        <div class="garden-card group card overflow-hidden relative transition-all duration-200 hover:-translate-y-1 hover:shadow-md hover:border-leaf-200">
+          <a [routerLink]="['/gardens', g.id]" class="block text-inherit no-underline">
+            <div class="garden-preview p-4 border-b border-cream-100"
+                 style="background: linear-gradient(180deg, var(--color-leaf-50), white 78%);">
               <svg
                 [attr.viewBox]="'0 0 ' + g.widthM + ' ' + g.lengthM"
                 preserveAspectRatio="xMidYMid meet"
+                class="w-full h-[160px] block"
               >
                 <rect
                   [attr.width]="g.widthM"
                   [attr.height]="g.lengthM"
-                  fill="#e8f5e9"
-                  stroke="#4caf50"
+                  fill="#e3ebde"
+                  stroke="#779964"
                   stroke-width="0.05"
                 />
                 @for (b of g.beds; track b.id) {
@@ -48,7 +69,8 @@
                       [attr.height]="b.lengthM"
                       [attr.fill]="bedFill(b.id)"
                       [attr.stroke]="bedStroke(b.id)"
-                      stroke-width="0.03"
+                      stroke-width="0.04"
+                      rx="0.08"
                     />
                     @if (icons) {
                       <text
@@ -66,31 +88,41 @@
                     [attr.y]="o.yM"
                     [attr.width]="o.widthM"
                     [attr.height]="o.lengthM"
-                    fill="#bdbdbd"
-                    stroke="#757575"
-                    stroke-width="0.03"
+                    fill="#d4cfbc"
+                    stroke="#a8a290"
+                    stroke-width="0.04"
+                    rx="0.06"
                   />
                 }
               </svg>
             </div>
-            <div class="garden-info">
-              <h3>{{ g.name }}</h3>
-              <p>
-                {{ g.widthM }}m &times; {{ g.lengthM }}m &middot;
-                {{ g.beds.length }} beds
+            <div class="garden-info p-4">
+              <h3 class="text-lg font-bold text-cream-800 m-0 mb-1">{{ g.name }}</h3>
+              <p class="text-sm text-cream-500 m-0 flex items-center gap-3">
+                <span>{{ g.widthM }}m × {{ g.lengthM }}m</span>
+                <span class="w-1 h-1 rounded-full bg-cream-300"></span>
+                <span>{{ g.beds.length }} {{ g.beds.length === 1 ? 'Beet' : 'Beete' }}</span>
               </p>
             </div>
           </a>
-          <button class="btn-delete" (click)="deleteGarden(g, $event)">
-            &times;
+          <button
+            class="btn-delete absolute top-3 right-3 inline-flex items-center justify-center w-8 h-8 rounded-full bg-white/95 border border-cream-200 text-cream-400 hover:text-red-700 hover:border-red-200 hover:bg-white transition-colors text-lg leading-none"
+            (click)="deleteGarden(g, $event)"
+            title="Garten löschen"
+          >
+            ×
           </button>
         </div>
       }
     </div>
   } @else {
-    <div class="empty-state">
-      <p>No gardens yet. Create your first one!</p>
-      <a routerLink="/gardens/new" class="btn btn-primary">Create Garden</a>
+    <div class="empty-state surface text-center py-20 px-6">
+      <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-leaf-100 text-leaf-700 text-3xl mb-4 shadow-sm">
+        🌱
+      </div>
+      <h2 class="text-xl font-bold text-cream-800 m-0 mb-2">Noch keine Gärten</h2>
+      <p class="text-cream-500 m-0 mb-6">Leg deinen ersten Garten an und plane die nächste Saison.</p>
+      <a routerLink="/gardens/new" class="btn btn-primary">+ Garten erstellen</a>
     </div>
   }
 </div>

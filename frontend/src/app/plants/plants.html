@@ -1,68 +1,88 @@
-<div class="plants-page">
-  <header class="plants-header">
-    <h1>Pflanzenkatalog</h1>
-    <a routerLink="/" class="btn btn-secondary">&larr; Dashboard</a>
+<div class="plants-page max-w-6xl mx-auto px-6 pt-10 pb-16">
+  <header class="flex items-center justify-between gap-4 mb-6 flex-wrap">
+    <div>
+      <p class="text-xs uppercase tracking-[0.15em] text-cream-500 mb-1">Bibliothek</p>
+      <h1 class="text-3xl font-bold text-leaf-800 tracking-tight m-0">Pflanzenkatalog</h1>
+    </div>
+    <a routerLink="/" class="btn btn-secondary btn-sm">
+      <span aria-hidden="true">←</span>
+      Dashboard
+    </a>
   </header>
 
-  <div class="filters">
+  <div class="card p-3 mb-5 flex flex-wrap items-center gap-2">
     <input
       type="text"
-      placeholder="Suche nach Name, Familie..."
+      placeholder="Suche nach Name, Familie…"
       [value]="search()"
       (input)="onSearch($event)"
-      class="search-input"
+      class="field-input flex-1 min-w-[240px]"
     />
-    <select (change)="onCategoryChange($event)" class="filter-select">
+    <select (change)="onCategoryChange($event)" class="field-select w-auto">
       <option value="">Alle Kategorien</option>
       @for (cat of categories(); track cat) {
         <option [value]="cat">{{ categoryLabel(cat) }}</option>
       }
     </select>
-    <select (change)="onDemandChange($event)" class="filter-select">
+    <select (change)="onDemandChange($event)" class="field-select w-auto">
       <option value="">Alle Zehrtypen</option>
       <option value="HEAVY">Starkzehrer</option>
       <option value="MEDIUM">Mittelzehrer</option>
       <option value="LIGHT">Schwachzehrer</option>
     </select>
-    <span class="result-count">{{ filteredPlants().length }} Pflanzen</span>
+    <span class="text-sm text-cream-500 whitespace-nowrap px-2">
+      {{ filteredPlants().length }} Pflanzen
+    </span>
   </div>
 
   @if (filteredPlants().length) {
-    <div class="table-wrapper">
-      <table class="plants-table">
-        <thead>
+    <div class="card overflow-x-auto">
+      <table class="plants-table w-full border-collapse text-sm">
+        <thead class="bg-cream-50">
           <tr>
-            <th>Name</th>
-            <th>Botanisch</th>
-            <th>Familie</th>
-            <th>Kategorie</th>
-            <th>Höhe</th>
-            <th>Abstand</th>
-            <th>Reihenabstand</th>
-            <th>Zehrtyp</th>
-            <th>Fruchtfolge</th>
+            <th class="px-3 py-2.5 text-left font-semibold text-cream-500 uppercase tracking-wider text-[0.7rem] border-b border-cream-200">Name</th>
+            <th class="px-3 py-2.5 text-left font-semibold text-cream-500 uppercase tracking-wider text-[0.7rem] border-b border-cream-200">Botanisch</th>
+            <th class="px-3 py-2.5 text-left font-semibold text-cream-500 uppercase tracking-wider text-[0.7rem] border-b border-cream-200">Familie</th>
+            <th class="px-3 py-2.5 text-left font-semibold text-cream-500 uppercase tracking-wider text-[0.7rem] border-b border-cream-200">Kategorie</th>
+            <th class="px-3 py-2.5 text-left font-semibold text-cream-500 uppercase tracking-wider text-[0.7rem] border-b border-cream-200">Höhe</th>
+            <th class="px-3 py-2.5 text-left font-semibold text-cream-500 uppercase tracking-wider text-[0.7rem] border-b border-cream-200">Abstand</th>
+            <th class="px-3 py-2.5 text-left font-semibold text-cream-500 uppercase tracking-wider text-[0.7rem] border-b border-cream-200">Reihen</th>
+            <th class="px-3 py-2.5 text-left font-semibold text-cream-500 uppercase tracking-wider text-[0.7rem] border-b border-cream-200">Zehrtyp</th>
+            <th class="px-3 py-2.5 text-left font-semibold text-cream-500 uppercase tracking-wider text-[0.7rem] border-b border-cream-200">Fruchtfolge</th>
           </tr>
         </thead>
         <tbody>
           @for (plant of filteredPlants(); track plant.id) {
-            <tr>
-              <td class="name-cell">{{ plant.name }}</td>
-              <td class="botanical-cell">
-                @if (plant.botanicalName) { <em>{{ plant.botanicalName }}</em> } @else { – }
+            <tr class="hover:bg-leaf-50/60 transition-colors border-b border-cream-100 last:border-b-0">
+              <td class="px-3 py-2.5">
+                <div class="flex items-center gap-2">
+                  @if (plant.iconEmoji) {
+                    <span class="text-base">{{ plant.iconEmoji }}</span>
+                  }
+                  <span class="font-semibold text-cream-800">{{ plant.name }}</span>
+                </div>
               </td>
-              <td>{{ plant.family ?? '–' }}</td>
-              <td><span class="badge badge-category">{{ categoryLabel(plant.category) }}</span></td>
-              <td>{{ heightDisplay(plant) }}</td>
-              <td>{{ plant.spacingCm }} cm</td>
-              <td>{{ plant.rowSpacingCm ? plant.rowSpacingCm + ' cm' : '–' }}</td>
-              <td>
+              <td class="px-3 py-2.5 text-cream-500 italic">
+                @if (plant.botanicalName) { {{ plant.botanicalName }} } @else { – }
+              </td>
+              <td class="px-3 py-2.5 text-cream-500">{{ plant.family ?? '–' }}</td>
+              <td class="px-3 py-2.5">
+                <span class="badge bg-leaf-100 text-leaf-800">{{ categoryLabel(plant.category) }}</span>
+              </td>
+              <td class="px-3 py-2.5 text-cream-700">{{ heightDisplay(plant) }}</td>
+              <td class="px-3 py-2.5 text-cream-700">{{ plant.spacingCm }} cm</td>
+              <td class="px-3 py-2.5 text-cream-700">{{ plant.rowSpacingCm ? plant.rowSpacingCm + ' cm' : '–' }}</td>
+              <td class="px-3 py-2.5">
                 @if (plant.nutrientDemand) {
-                  <span class="badge" [class]="demandClass(plant.nutrientDemand)">
+                  <span class="badge"
+                        [class.demand-heavy]="plant.nutrientDemand === 'HEAVY'"
+                        [class.demand-medium]="plant.nutrientDemand === 'MEDIUM'"
+                        [class.demand-light]="plant.nutrientDemand === 'LIGHT'">
                     {{ demandLabel(plant.nutrientDemand) }}
                   </span>
                 } @else { – }
               </td>
-              <td>
+              <td class="px-3 py-2.5 text-cream-700">
                 @if (plant.rotationYears) {
                   {{ plant.rotationYears }} {{ plant.rotationYears === 1 ? 'Jahr' : 'Jahre' }}
                 } @else { – }
@@ -73,11 +93,11 @@
       </table>
     </div>
   } @else {
-    <div class="empty-state">
+    <div class="surface text-center py-16 px-6">
       @if (plants().length === 0) {
-        <p>Pflanzenkatalog wird geladen...</p>
+        <p class="text-cream-500 m-0">Pflanzenkatalog wird geladen…</p>
       } @else {
-        <p>Keine Pflanzen gefunden.</p>
+        <p class="text-cream-500 m-0">Keine Pflanzen gefunden.</p>
       }
     </div>
   }

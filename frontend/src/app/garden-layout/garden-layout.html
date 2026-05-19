@@ -1,100 +1,128 @@
 @if (garden(); as g) {
-  <div class="layout-page">
-    <header class="layout-header">
-      <a routerLink="/" class="back">&larr; Gardens</a>
-      <h1>{{ g.name }}</h1>
-      <span class="dims">{{ g.widthM }}m &times; {{ g.lengthM }}m</span>
-      <button class="btn-edit" type="button" (click)="startEditGarden()" title="Edit garden">
-        &#9998;
+  <div class="layout-page h-screen flex flex-col">
+    <header class="layout-header flex items-center gap-4 px-6 py-3 bg-white/85 backdrop-blur border-b border-cream-200">
+      <a routerLink="/" class="back inline-flex items-center gap-1 text-cream-500 hover:text-cream-800 transition-colors text-sm font-medium">
+        <span aria-hidden="true">←</span>
+        Gärten
+      </a>
+      <div class="flex-1 min-w-0 flex items-baseline gap-3">
+        <h1 class="text-lg font-bold text-cream-800 truncate m-0">{{ g.name }}</h1>
+        <span class="dims text-xs text-cream-400 whitespace-nowrap">{{ g.widthM }}m × {{ g.lengthM }}m</span>
+      </div>
+      <button class="btn btn-ghost btn-sm" type="button" (click)="startEditGarden()" title="Garten bearbeiten">
+        <span aria-hidden="true">✎</span>
+        Bearbeiten
       </button>
     </header>
 
-    <div class="layout-body">
-      <aside class="toolbar">
-        <h3>Tools</h3>
-        <button [class.active]="tool() === 'select'" (click)="tool.set('select')">&#9754; Select</button>
-        <button [class.active]="tool() === 'bed'" (click)="tool.set('bed')">&#9744; Add Bed</button>
-        <button [class.active]="tool() === 'obstacle'" (click)="tool.set('obstacle')">&#9632; Add Obstacle</button>
+    <div class="layout-body flex flex-1 overflow-hidden">
+      <aside class="toolbar w-64 flex-shrink-0 bg-white/85 border-r border-cream-200 overflow-y-auto p-4 space-y-2">
+        <h3 class="text-xs uppercase tracking-[0.12em] text-cream-500 font-semibold m-0 mb-2">Werkzeuge</h3>
+        <div class="space-y-1.5">
+          <button type="button"
+                  class="tool-btn"
+                  [class.active]="tool() === 'select'"
+                  (click)="tool.set('select')">
+            <span aria-hidden="true">◈</span> Auswählen
+          </button>
+          <button type="button"
+                  class="tool-btn"
+                  [class.active]="tool() === 'bed'"
+                  (click)="tool.set('bed')">
+            <span aria-hidden="true">▢</span> Beet hinzufügen
+          </button>
+          <button type="button"
+                  class="tool-btn"
+                  [class.active]="tool() === 'obstacle'"
+                  (click)="tool.set('obstacle')">
+            <span aria-hidden="true">■</span> Hindernis hinzufügen
+          </button>
+        </div>
 
-        <hr />
+        <div class="border-t border-cream-200 my-4"></div>
 
         @switch (tool()) {
           @case ('bed') {
-            <div class="tool-form">
-              <h4>New Bed</h4>
-              <label>Name<input type="text" [formField]="bedForm.name" /></label>
-              <label>Width (m)<input type="number" [formField]="bedForm.widthM" step="0.5" /></label>
-              <label>Length (m)<input type="number" [formField]="bedForm.lengthM" step="0.5" /></label>
-              <p class="hint">Click on the grid to place</p>
+            <div class="space-y-3">
+              <h4 class="text-sm font-bold text-cream-800 m-0">Neues Beet</h4>
+              <label class="field-label">Name<input class="field-input" type="text" [formField]="bedForm.name" /></label>
+              <label class="field-label">Breite (m)<input class="field-input" type="number" [formField]="bedForm.widthM" step="0.5" /></label>
+              <label class="field-label">Länge (m)<input class="field-input" type="number" [formField]="bedForm.lengthM" step="0.5" /></label>
+              <p class="text-xs text-cream-400 italic m-0">Klick auf das Raster, um zu platzieren</p>
             </div>
           }
           @case ('obstacle') {
-            <div class="tool-form">
-              <h4>New Obstacle</h4>
-              <label>Label<input type="text" [formField]="obstacleForm.label" /></label>
-              <label>Width (m)<input type="number" [formField]="obstacleForm.widthM" step="0.5" /></label>
-              <label>Length (m)<input type="number" [formField]="obstacleForm.lengthM" step="0.5" /></label>
-              <p class="hint">Click on the grid to place</p>
+            <div class="space-y-3">
+              <h4 class="text-sm font-bold text-cream-800 m-0">Neues Hindernis</h4>
+              <label class="field-label">Bezeichnung<input class="field-input" type="text" [formField]="obstacleForm.label" /></label>
+              <label class="field-label">Breite (m)<input class="field-input" type="number" [formField]="obstacleForm.widthM" step="0.5" /></label>
+              <label class="field-label">Länge (m)<input class="field-input" type="number" [formField]="obstacleForm.lengthM" step="0.5" /></label>
+              <p class="text-xs text-cream-400 italic m-0">Klick auf das Raster, um zu platzieren</p>
             </div>
           }
           @case ('select') {
             @if (selectedBed(); as bed) {
-              <div class="tool-form">
+              <div class="space-y-3">
                 @if (editingBed()) {
-                  <h4>Edit Bed</h4>
-                  <label>Name<input type="text" [formField]="editBedForm.name" /></label>
-                  <label>X Position (m)<input type="number" [formField]="editBedForm.xM" step="0.01" /></label>
-                  <label>Y Position (m)<input type="number" [formField]="editBedForm.yM" step="0.01" /></label>
-                  <label>Width (m)<input type="number" [formField]="editBedForm.widthM" step="0.5" /></label>
-                  <label>Length (m)<input type="number" [formField]="editBedForm.lengthM" step="0.5" /></label>
-                  <label>Rotation (°)<input type="number" [formField]="editBedForm.rotationDeg" step="1" /></label>
-                  <div class="btn-row">
-                    <button class="btn-primary" (click)="saveEditBed()">Save</button>
-                    <button class="btn-secondary" (click)="cancelEditBed()">Cancel</button>
+                  <h4 class="text-sm font-bold text-cream-800 m-0">Beet bearbeiten</h4>
+                  <label class="field-label">Name<input class="field-input" type="text" [formField]="editBedForm.name" /></label>
+                  <label class="field-label">X-Position (m)<input class="field-input" type="number" [formField]="editBedForm.xM" step="0.01" /></label>
+                  <label class="field-label">Y-Position (m)<input class="field-input" type="number" [formField]="editBedForm.yM" step="0.01" /></label>
+                  <label class="field-label">Breite (m)<input class="field-input" type="number" [formField]="editBedForm.widthM" step="0.5" /></label>
+                  <label class="field-label">Länge (m)<input class="field-input" type="number" [formField]="editBedForm.lengthM" step="0.5" /></label>
+                  <label class="field-label">Rotation (°)<input class="field-input" type="number" [formField]="editBedForm.rotationDeg" step="1" /></label>
+                  <div class="flex gap-2 pt-1">
+                    <button class="btn btn-primary btn-sm flex-1" (click)="saveEditBed()">Speichern</button>
+                    <button class="btn btn-secondary btn-sm" (click)="cancelEditBed()">Abbrechen</button>
                   </div>
                 } @else {
-                  <h4>{{ bed.name }}</h4>
-                  <p class="detail">{{ bed.widthM }}m &times; {{ bed.lengthM }}m</p>
-                  <p class="detail">Position: ({{ bed.xM | number:'1.0-2' }}, {{ bed.yM | number:'1.0-2' }})</p>
-                  <p class="detail">Rotation: {{ bed.rotationDeg ?? 0 }}°</p>
-                  <p class="hint">Drag handle to rotate</p>
-                  <div class="btn-stack">
-                    <button class="btn-primary" (click)="openBedPlanner()">&#127793; Plant Bed</button>
-                    <button class="btn-secondary" (click)="startEditBed()">&#9998; Edit</button>
-                    <button class="btn-danger" (click)="deleteBed(bed)">&#10005; Delete</button>
+                  <h4 class="text-base font-bold text-cream-800 m-0">{{ bed.name }}</h4>
+                  <div class="space-y-1 text-sm text-cream-500">
+                    <p class="m-0">{{ bed.widthM }}m × {{ bed.lengthM }}m</p>
+                    <p class="m-0">Position: ({{ bed.xM | number:'1.0-2' }}, {{ bed.yM | number:'1.0-2' }})</p>
+                    <p class="m-0">Rotation: {{ bed.rotationDeg ?? 0 }}°</p>
+                  </div>
+                  <p class="text-xs text-cream-400 italic m-0">Griff ziehen zum Drehen</p>
+                  <div class="flex flex-col gap-2 pt-1">
+                    <button class="btn btn-primary btn-sm" (click)="openBedPlanner()">🌿 Bepflanzen</button>
+                    <button class="btn btn-secondary btn-sm" (click)="startEditBed()">✎ Bearbeiten</button>
+                    <button class="btn btn-danger btn-sm" (click)="deleteBed(bed)">× Löschen</button>
                   </div>
                 }
               </div>
             }
             @if (selectedObstacle(); as obs) {
-              <div class="tool-form">
-                <h4>{{ obs.label }}</h4>
-                <p class="detail">{{ obs.widthM }}m &times; {{ obs.lengthM }}m</p>
-                <button class="btn-danger" (click)="deleteObstacle(obs)">&#10005; Delete</button>
+              <div class="space-y-3">
+                <h4 class="text-base font-bold text-cream-800 m-0">{{ obs.label }}</h4>
+                <p class="text-sm text-cream-500 m-0">{{ obs.widthM }}m × {{ obs.lengthM }}m</p>
+                <button class="btn btn-danger btn-sm" (click)="deleteObstacle(obs)">× Löschen</button>
               </div>
+            }
+            @if (!selectedBed() && !selectedObstacle()) {
+              <p class="text-xs text-cream-400 italic m-0">Wähle ein Beet oder Hindernis im Garten aus.</p>
             }
           }
         }
       </aside>
 
       <div
-        class="canvas-container"
+        class="canvas-container relative flex-1 overflow-hidden"
         [class.is-panning]="isPanning()"
         [class.placement-mode]="tool() !== 'select'"
         (wheel)="onWheel($event)"
       >
-        <div class="zoom-controls">
-          <button type="button" (click)="zoomOut()" title="Zoom out">&minus;</button>
-          <button type="button" (click)="zoomReset()" title="Reset zoom">
+        <div class="zoom-controls absolute top-4 right-4 z-10 inline-flex gap-1 bg-white/95 backdrop-blur border border-cream-200 rounded-xl p-1 shadow-md">
+          <button class="zoom-btn" type="button" (click)="zoomOut()" title="Auszoomen">−</button>
+          <button class="zoom-btn min-w-[3.5rem]" type="button" (click)="zoomReset()" title="Zurücksetzen">
             {{ (zoom() * 100) | number:'1.0-0' }}%
           </button>
-          <button type="button" (click)="zoomIn()" title="Zoom in">+</button>
+          <button class="zoom-btn" type="button" (click)="zoomIn()" title="Reinzoomen">+</button>
         </div>
 
-        <div class="canvas-world" [style.transform]="canvasTransform()">
+        <div class="canvas-world absolute top-0 left-0 origin-top-left" [style.transform]="canvasTransform()">
           <svg
             #gardenSvg
-            class="garden-canvas"
+            class="garden-canvas block"
             [attr.viewBox]="'0 0 ' + g.widthM + ' ' + g.lengthM"
             [attr.width]="g.widthM * 100"
             [attr.height]="g.lengthM * 100"
@@ -104,13 +132,13 @@
             (mouseup)="onCanvasMouseUp($event)"
             (mouseleave)="cancelDrag()"
           >
-            <rect [attr.width]="g.widthM" [attr.height]="g.lengthM" fill="#e8f5e9" />
+            <rect [attr.width]="g.widthM" [attr.height]="g.lengthM" fill="#f3f7f1" />
 
             @for (x of gridLinesX(); track x) {
-              <line [attr.x1]="x" y1="0" [attr.x2]="x" [attr.y2]="g.lengthM" stroke="#c8e6c9" stroke-width="0.02" />
+              <line [attr.x1]="x" y1="0" [attr.x2]="x" [attr.y2]="g.lengthM" stroke="#c6d6bb" stroke-width="0.02" />
             }
             @for (y of gridLinesY(); track y) {
-              <line x1="0" [attr.y1]="y" [attr.x2]="g.widthM" [attr.y2]="y" stroke="#c8e6c9" stroke-width="0.02" />
+              <line x1="0" [attr.y1]="y" [attr.x2]="g.widthM" [attr.y2]="y" stroke="#c6d6bb" stroke-width="0.02" />
             }
 
             @for (o of g.obstacles; track o.id) {
@@ -120,14 +148,15 @@
               >
                 <rect
                   [attr.x]="o.xM" [attr.y]="o.yM" [attr.width]="o.widthM" [attr.height]="o.lengthM"
-                  fill="#bdbdbd" stroke="#757575"
+                  fill="#d4cfbc" stroke="#a8a290"
                   [attr.stroke-width]="selectedObstacle()?.id === o.id ? 0.06 : 0.03"
                   [attr.stroke-dasharray]="selectedObstacle()?.id === o.id ? '0.1 0.05' : 'none'"
+                  rx="0.06"
                 />
                 <text
                   [attr.x]="o.xM + o.widthM / 2" [attr.y]="o.yM + o.lengthM / 2"
                   text-anchor="middle" dominant-baseline="central"
-                  [attr.font-size]="Math.min(o.widthM, o.lengthM) * 0.3" fill="#424242"
+                  [attr.font-size]="Math.min(o.widthM, o.lengthM) * 0.3" fill="#4f4b3d"
                   pointer-events="none"
                 >{{ o.label }}</text>
               </g>
@@ -154,12 +183,13 @@
                   [attr.stroke-width]="selectedBed()?.id === b.id ? 0.06 : 0.03"
                   [attr.stroke-dasharray]="selectedBed()?.id === b.id ? '0.1 0.05' : 'none'"
                   [attr.opacity]="isDragging ? 0.7 : 1"
+                  rx="0.06"
                 />
                 @let icons = bedIconText(b.id);
                 <text
                   [attr.x]="cx" [attr.y]="icons ? cy - Math.min(b.widthM, b.lengthM) * 0.1 : cy"
                   text-anchor="middle" dominant-baseline="central"
-                  [attr.font-size]="Math.min(b.widthM, b.lengthM) * 0.28" fill="#1b5e20"
+                  [attr.font-size]="Math.min(b.widthM, b.lengthM) * 0.28" fill="#2e4127"
                   [attr.opacity]="isDragging ? 0.7 : 1"
                   pointer-events="none"
                 >{{ b.name }}</text>
@@ -176,11 +206,11 @@
                   <line
                     [attr.x1]="cx" [attr.y1]="by"
                     [attr.x2]="cx" [attr.y2]="by - 0.4"
-                    stroke="#2e7d32" stroke-width="0.03" pointer-events="none"
+                    stroke="#466838" stroke-width="0.03" pointer-events="none"
                   />
                   <circle
                     [attr.cx]="cx" [attr.cy]="by - 0.4" r="0.15"
-                    fill="#fff" stroke="#2e7d32" stroke-width="0.04"
+                    fill="#fff" stroke="#466838" stroke-width="0.04"
                     class="rotate-handle"
                     (mousedown)="onRotateHandleMouseDown(b, $event)"
                   />
@@ -191,9 +221,10 @@
             @if (ghost(); as gh) {
               <rect
                 [attr.x]="gh.x" [attr.y]="gh.y" [attr.width]="gh.w" [attr.height]="gh.h"
-                [attr.fill]="gh.type === 'bed' ? 'rgba(76,175,80,0.3)' : 'rgba(158,158,158,0.3)'"
-                [attr.stroke]="gh.type === 'bed' ? '#2e7d32' : '#757575'"
+                [attr.fill]="gh.type === 'bed' ? 'rgba(119,153,100,0.3)' : 'rgba(168,162,144,0.3)'"
+                [attr.stroke]="gh.type === 'bed' ? '#466838' : '#76715f'"
                 stroke-width="0.03" stroke-dasharray="0.1 0.05" pointer-events="none"
+                rx="0.06"
               />
             }
           </svg>
@@ -202,34 +233,41 @@
     </div>
 
     @if (editingGarden()) {
-      <div class="modal-backdrop" (click)="cancelEditGarden()">
-        <div class="modal" (click)="$event.stopPropagation()">
-          <h2>Edit Garden</h2>
-          <div class="tool-form">
-            <label>Name<input type="text" [formField]="editGardenForm.name" /></label>
-            <label>Description<textarea rows="2" [formField]="editGardenForm.description"></textarea></label>
-            <label>Width (m)<input type="number" [formField]="editGardenForm.widthM" step="0.5" /></label>
-            <label>Length (m)<input type="number" [formField]="editGardenForm.lengthM" step="0.5" /></label>
+      <div class="modal-backdrop fixed inset-0 z-50 bg-cream-900/45 backdrop-blur-sm flex items-center justify-center p-4"
+           (click)="cancelEditGarden()">
+        <div class="modal surface w-full max-w-md p-6 max-h-[90vh] overflow-y-auto"
+             (click)="$event.stopPropagation()">
+          <h2 class="text-xl font-bold text-leaf-800 m-0 mb-4">Garten bearbeiten</h2>
+
+          <div class="space-y-3">
+            <label class="field-label">Name<input class="field-input" type="text" [formField]="editGardenForm.name" /></label>
+            <label class="field-label">Beschreibung<textarea class="field-textarea" rows="2" [formField]="editGardenForm.description"></textarea></label>
+            <div class="grid grid-cols-2 gap-3">
+              <label class="field-label">Breite (m)<input class="field-input" type="number" [formField]="editGardenForm.widthM" step="0.5" /></label>
+              <label class="field-label">Länge (m)<input class="field-input" type="number" [formField]="editGardenForm.lengthM" step="0.5" /></label>
+            </div>
           </div>
 
-          <h3 class="section-title">People with access</h3>
-          <ul class="member-list">
+          <h3 class="text-xs uppercase tracking-[0.12em] text-cream-500 font-semibold mt-6 mb-2">Personen mit Zugriff</h3>
+          <ul class="member-list space-y-1.5 m-0 p-0 list-none">
             @for (m of memberships(); track m.userId) {
-              <li class="member-row" [class.pending]="m.pending">
+              <li class="member-row flex items-center gap-2.5 p-2 border border-cream-200 rounded-lg"
+                  [class.pending]="m.pending"
+                  [style.background]="m.pending ? '#fffbea' : ''"
+                  [style.borderColor]="m.pending ? '#ffe082' : ''">
                 @if (m.pictureUrl && !m.pending) {
-                  <img [src]="m.pictureUrl" [alt]="m.name" referrerpolicy="no-referrer" />
+                  <img [src]="m.pictureUrl" [alt]="m.name" referrerpolicy="no-referrer"
+                       class="w-8 h-8 rounded-full object-cover" />
                 } @else {
-                  <span class="initial">{{ (m.pending ? m.email : m.name).charAt(0).toUpperCase() }}</span>
+                  <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-leaf-100 text-leaf-700 text-xs font-bold">
+                    {{ (m.pending ? m.email : m.name).charAt(0).toUpperCase() }}
+                  </span>
                 }
-                <div class="member-info">
-                  <div class="member-name">
-                    @if (m.pending) {
-                      {{ m.email }}
-                    } @else {
-                      {{ m.name }}
-                    }
+                <div class="flex-1 min-w-0">
+                  <div class="text-sm font-semibold text-cream-800 truncate">
+                    @if (m.pending) { {{ m.email }} } @else { {{ m.name }} }
                   </div>
-                  <div class="member-email">
+                  <div class="text-xs text-cream-500 truncate">
                     @if (m.pending) {
                       <em>noch nicht angemeldet</em>
                     } @else {
@@ -237,53 +275,65 @@
                     }
                   </div>
                 </div>
-                <span class="role-badge" [class.owner]="m.role === 'OWNER'">{{ m.role }}</span>
+                <span class="text-[0.65rem] tracking-wide uppercase px-2 py-0.5 rounded-full font-semibold"
+                      [class.bg-leaf-100]="m.role === 'OWNER'"
+                      [class.text-leaf-800]="m.role === 'OWNER'"
+                      [class.bg-cream-100]="m.role !== 'OWNER'"
+                      [class.text-cream-600]="m.role !== 'OWNER'">
+                  {{ m.role === 'OWNER' ? 'Owner' : m.role === 'COLLABORATOR' ? 'Editor' : 'Viewer' }}
+                </span>
                 @if (isOwner() && m.role !== 'OWNER') {
-                  <button class="btn-icon" type="button" (click)="removeMember(m)" title="Remove">&times;</button>
+                  <button class="text-cream-400 hover:text-red-700 transition-colors text-lg leading-none px-1.5"
+                          type="button" (click)="removeMember(m)" title="Entfernen">×</button>
                 }
               </li>
             }
           </ul>
+
           @if (isOwner()) {
-            <div class="invite-row">
+            <div class="flex gap-2 mt-3">
               <input
+                class="field-input flex-1 min-w-0"
                 type="email"
-                placeholder="invite by email"
+                placeholder="E-Mail einladen"
                 [value]="inviteEmail()"
                 (input)="inviteEmail.set($any($event.target).value)"
                 (keydown.enter)="inviteMember()"
               />
               <select
+                class="field-select w-auto"
                 [value]="inviteRole()"
                 (change)="inviteRole.set($any($event.target).value)"
-                title="Role"
+                title="Rolle"
               >
                 <option value="COLLABORATOR">Editor</option>
                 <option value="VIEWER">Viewer</option>
               </select>
               <button
-                class="btn-primary"
+                class="btn btn-primary btn-sm"
                 type="button"
                 (click)="inviteMember()"
                 [disabled]="!inviteEmail() || inviteBusy()"
               >
-                {{ inviteBusy() ? '…' : 'Invite' }}
+                {{ inviteBusy() ? '…' : 'Einladen' }}
               </button>
             </div>
-            @if (inviteError(); as e) { <p class="error">{{ e }}</p> }
-            <p class="hint">
+            @if (inviteError(); as e) {
+              <p class="text-xs text-red-700 mt-2 m-0">{{ e }}</p>
+            }
+            <p class="text-xs text-cream-400 italic mt-2 m-0">
               Eingeladene Personen bekommen Zugriff, sobald sie sich das erste Mal mit derselben
               Google-Mail-Adresse anmelden.
             </p>
           }
 
-          <div class="modal-actions">
+          <div class="flex items-center gap-2 mt-6 pt-5 border-t border-cream-200">
             @if (isOwner()) {
-              <button class="btn-danger" type="button" (click)="deleteGarden()">Delete Garden</button>
+              <button class="btn btn-danger btn-sm" type="button" (click)="deleteGarden()">Garten löschen</button>
             }
-            <span class="spacer"></span>
-            <button class="btn-secondary" type="button" (click)="cancelEditGarden()">Cancel</button>
-            <button class="btn-primary" type="button" (click)="saveEditGarden()">Save</button>
+            <span class="flex-1"></span>
+            <button class="btn btn-secondary btn-sm" type="button" (click)="cancelEditGarden()">Abbrechen</button>
+            <button class="btn btn-primary btn-sm" type="button" (click)="saveEditGarden()">Speichern</button>
           </div>
         </div>
       </div>

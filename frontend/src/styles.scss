@@ -1,39 +1,90 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+@import 'tailwindcss';
 
+/* ─── Garden design tokens — exposed as CSS variables and as Tailwind theme ─── */
+@theme {
+  --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    Helvetica, Arial, sans-serif;
+
+  /* Sage-green primary */
+  --color-leaf-50: #f3f7f1;
+  --color-leaf-100: #e3ebde;
+  --color-leaf-200: #c6d6bb;
+  --color-leaf-300: #9fbb8e;
+  --color-leaf-400: #779964;
+  --color-leaf-500: #5a8049;
+  --color-leaf-600: #466838;
+  --color-leaf-700: #38522d;
+  --color-leaf-800: #2e4127;
+  --color-leaf-900: #213018;
+
+  /* Warm clay accent */
+  --color-clay-50: #fdf4ef;
+  --color-clay-100: #fae5d6;
+  --color-clay-200: #f4c7a4;
+  --color-clay-300: #eaa472;
+  --color-clay-400: #df7e44;
+  --color-clay-500: #cf6629;
+  --color-clay-600: #b04f1f;
+  --color-clay-700: #8a3d18;
+  --color-clay-800: #6f3315;
+
+  /* Warm neutral palette */
+  --color-cream-50: #fbfaf6;
+  --color-cream-100: #f5f3eb;
+  --color-cream-200: #ebe7d8;
+  --color-cream-300: #d4cfbc;
+  --color-cream-400: #a8a290;
+  --color-cream-500: #76715f;
+  --color-cream-600: #4f4b3d;
+  --color-cream-700: #36332a;
+  --color-cream-800: #23211b;
+  --color-cream-900: #14130f;
+
+  --color-danger: #c0392b;
+  --color-danger-hover: #962e23;
+
+  --radius-md: 0.625rem;
+  --radius-lg: 0.875rem;
+  --radius-xl: 1.125rem;
+}
+
+/* ─── Legacy CSS-variable aliases so existing component .scss keeps working ─── */
 :root {
-  --green-50: #f1f8f3;
-  --green-100: #e8f5e9;
-  --green-200: #c8e6c9;
-  --green-400: #66bb6a;
-  --green-500: #4caf50;
-  --green-600: #43a047;
-  --green-700: #388e3c;
-  --green-800: #2e7d32;
-  --green-900: #1b5e20;
+  --green-50: var(--color-leaf-50);
+  --green-100: var(--color-leaf-100);
+  --green-200: var(--color-leaf-200);
+  --green-400: var(--color-leaf-400);
+  --green-500: var(--color-leaf-500);
+  --green-600: var(--color-leaf-600);
+  --green-700: var(--color-leaf-700);
+  --green-800: var(--color-leaf-800);
+  --green-900: var(--color-leaf-900);
 
-  --gray-50: #fafafa;
-  --gray-100: #f5f5f5;
-  --gray-200: #eeeeee;
-  --gray-300: #e0e0e0;
-  --gray-400: #bdbdbd;
-  --gray-500: #9e9e9e;
-  --gray-600: #757575;
-  --gray-700: #555555;
-  --gray-800: #333333;
-  --gray-900: #1a1a1a;
+  --gray-50: var(--color-cream-50);
+  --gray-100: var(--color-cream-100);
+  --gray-200: var(--color-cream-200);
+  --gray-300: var(--color-cream-300);
+  --gray-400: var(--color-cream-400);
+  --gray-500: var(--color-cream-500);
+  --gray-600: var(--color-cream-500);
+  --gray-700: var(--color-cream-600);
+  --gray-800: var(--color-cream-700);
+  --gray-900: var(--color-cream-800);
 
-  --danger: #c62828;
-  --danger-hover: #b71c1c;
+  --danger: var(--color-danger);
+  --danger-hover: var(--color-danger-hover);
 
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 14px;
+  --radius-sm: 0.5rem;
+  --radius-md: 0.625rem;
+  --radius-lg: 0.875rem;
 
-  --shadow-sm: 0 1px 2px rgba(15, 39, 25, 0.05), 0 1px 3px rgba(15, 39, 25, 0.06);
-  --shadow-md: 0 4px 10px rgba(15, 39, 25, 0.06), 0 2px 4px rgba(15, 39, 25, 0.05);
-  --shadow-lg: 0 12px 30px rgba(15, 39, 25, 0.12);
+  --shadow-sm: 0 1px 2px rgba(34, 36, 24, 0.04), 0 1px 3px rgba(34, 36, 24, 0.06);
+  --shadow-md: 0 4px 12px rgba(34, 36, 24, 0.06), 0 2px 4px rgba(34, 36, 24, 0.05);
+  --shadow-lg: 0 14px 40px rgba(34, 36, 24, 0.12);
 
-  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    Helvetica, Arial, sans-serif;
 }
 
 *,
@@ -42,7 +93,8 @@
   box-sizing: border-box;
 }
 
-html, body {
+html,
+body {
   margin: 0;
   padding: 0;
   height: 100%;
@@ -51,23 +103,36 @@ html, body {
 body {
   font-family: var(--font-sans);
   font-size: 14px;
-  line-height: 1.5;
-  color: var(--gray-800);
-  background: var(--gray-50);
+  line-height: 1.55;
+  color: var(--color-cream-700);
+  background:
+    radial-gradient(1200px 800px at 12% -10%, rgba(159, 187, 142, 0.18), transparent 65%),
+    radial-gradient(1000px 700px at 110% 110%, rgba(234, 164, 114, 0.12), transparent 65%),
+    var(--color-cream-50);
+  background-attachment: fixed;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-h1, h2, h3, h4, h5, h6 {
-  font-weight: 600;
-  letter-spacing: -0.01em;
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-sans);
+  font-weight: 700;
+  letter-spacing: -0.018em;
+  color: var(--color-cream-800);
 }
 
 a {
-  color: var(--green-700);
+  color: var(--color-leaf-600);
+  text-decoration: none;
+  transition: color 0.15s ease;
 
   &:hover {
-    color: var(--green-900);
+    color: var(--color-leaf-800);
   }
 }
 
@@ -80,12 +145,12 @@ button {
 }
 
 button {
-  font-weight: 500;
+  font-weight: 600;
 }
 
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
 }
 
 ::-webkit-scrollbar-track {
@@ -93,10 +158,140 @@ button {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--gray-300);
-  border-radius: 4px;
+  background: var(--color-cream-200);
+  border-radius: 6px;
 
   &:hover {
-    background: var(--gray-400);
+    background: var(--color-cream-300);
   }
+}
+
+/* ─── Reusable component classes for the new design system ─── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  padding: 0.6rem 1.1rem;
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease,
+    transform 0.05s ease, box-shadow 0.15s ease;
+  text-decoration: none;
+  line-height: 1.1;
+
+  &:active {
+    transform: translateY(1px);
+  }
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    transform: none;
+  }
+}
+
+.btn-primary {
+  background: var(--color-leaf-600);
+  color: white;
+  border-color: var(--color-leaf-600);
+  box-shadow: 0 1px 2px rgba(56, 82, 45, 0.2);
+
+  &:hover {
+    background: var(--color-leaf-700);
+    border-color: var(--color-leaf-700);
+  }
+}
+
+.btn-secondary {
+  background: white;
+  color: var(--color-cream-700);
+  border-color: var(--color-cream-200);
+
+  &:hover {
+    background: var(--color-cream-50);
+    border-color: var(--color-cream-300);
+  }
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--color-cream-600);
+  border-color: transparent;
+
+  &:hover {
+    background: var(--color-cream-100);
+    color: var(--color-cream-800);
+  }
+}
+
+.btn-danger {
+  background: white;
+  color: var(--color-danger);
+  border-color: rgba(192, 57, 43, 0.25);
+
+  &:hover {
+    background: #fdebe7;
+    border-color: var(--color-danger);
+  }
+}
+
+.btn-sm {
+  padding: 0.4rem 0.7rem;
+  font-size: 0.825rem;
+}
+
+.field-input,
+.field-select,
+.field-textarea {
+  width: 100%;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid var(--color-cream-200);
+  border-radius: var(--radius-md);
+  background: white;
+  font-size: 0.9rem;
+  color: var(--color-cream-700);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+
+  &::placeholder {
+    color: var(--color-cream-400);
+  }
+
+  &:focus {
+    outline: none;
+    border-color: var(--color-leaf-400);
+    box-shadow: 0 0 0 3px rgba(119, 153, 100, 0.2);
+  }
+}
+
+.field-textarea {
+  resize: vertical;
+  min-height: 70px;
+  font-family: inherit;
+}
+
+.field-label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.825rem;
+  font-weight: 600;
+  color: var(--color-cream-700);
+}
+
+.card {
+  background: white;
+  border: 1px solid var(--color-cream-200);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.surface {
+  background: white;
+  border: 1px solid var(--color-cream-200);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-md);
 }

@@ -55,6 +55,7 @@ export class LoginComponent implements AfterViewInit {
   protected readonly hasClientId = computed(() => !!this.clientId);
   protected readonly error = signal<string | null>(null);
   protected readonly busy = signal(false);
+  protected readonly year = new Date().getFullYear();
 
   ngAfterViewInit(): void {
     if (!this.clientId) return;

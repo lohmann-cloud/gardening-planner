@@ -1,72 +1,79 @@
-<div class="create-page">
-  <div class="create-header">
-    <a routerLink="/" class="back-link">&larr; Gardens</a>
-    <h1>Create Garden</h1>
+<div class="create-page max-w-2xl mx-auto px-6 pt-10 pb-16">
+  <div class="flex items-center gap-3 mb-6">
+    <a routerLink="/" class="text-cream-500 hover:text-cream-800 transition-colors text-sm font-medium">
+      ← Gärten
+    </a>
   </div>
-  <form [formRoot]="gardenForm" class="form">
-    <label>
-      Garden Name
+
+  <p class="text-xs uppercase tracking-[0.15em] text-cream-500 mb-1">Neuer Garten</p>
+  <h1 class="text-3xl font-bold text-leaf-800 tracking-tight m-0 mb-6">Garten anlegen</h1>
+
+  <form [formRoot]="gardenForm" class="surface p-6 space-y-5">
+    <label class="field-label">
+      Garten-Name
       <input
         type="text"
+        class="field-input"
         [formField]="gardenForm.name"
-        placeholder="e.g. Backyard Garden"
+        placeholder="z. B. Hinterhof-Garten"
       />
     </label>
     @if (gardenForm.name().touched() && gardenForm.name().invalid()) {
-      <p class="error">{{ gardenForm.name().errors()[0]?.message }}</p>
+      <p class="text-sm text-red-700 -mt-2 m-0">{{ gardenForm.name().errors()[0]?.message }}</p>
     }
 
-    <label>
-      Description (optional)
+    <label class="field-label">
+      Beschreibung (optional)
       <textarea
+        class="field-textarea"
         [formField]="gardenForm.description"
         rows="2"
-        placeholder="Notes about this garden"
+        placeholder="Notizen zu diesem Garten"
       ></textarea>
     </label>
 
-    <div class="row">
-      <label>
-        Width (metres)
-        <input type="number" [formField]="gardenForm.widthM" step="0.5" />
+    <div class="grid grid-cols-2 gap-4">
+      <label class="field-label">
+        Breite (Meter)
+        <input class="field-input" type="number" [formField]="gardenForm.widthM" step="0.5" />
       </label>
-      <label>
-        Length (metres)
-        <input type="number" [formField]="gardenForm.lengthM" step="0.5" />
+      <label class="field-label">
+        Länge (Meter)
+        <input class="field-input" type="number" [formField]="gardenForm.lengthM" step="0.5" />
       </label>
     </div>
 
     @if (gardenForm.widthM().value() > 0 && gardenForm.lengthM().value() > 0) {
-      <div class="preview">
-        <p>
-          Preview: {{ gardenForm.widthM().value() }}m &times;
-          {{ gardenForm.lengthM().value() }}m
+      <div class="rounded-xl border border-cream-200 p-4 text-center"
+           style="background: linear-gradient(180deg, var(--color-leaf-50), white 80%);">
+        <p class="text-xs text-cream-500 m-0 mb-2">
+          Vorschau: {{ gardenForm.widthM().value() }}m × {{ gardenForm.lengthM().value() }}m
         </p>
         <svg
           [attr.viewBox]="'0 0 ' + gardenForm.widthM().value() + ' ' + gardenForm.lengthM().value()"
           preserveAspectRatio="xMidYMid meet"
+          class="w-full max-h-56"
         >
           <rect
             [attr.width]="gardenForm.widthM().value()"
             [attr.height]="gardenForm.lengthM().value()"
-            fill="#e8f5e9"
-            stroke="#4caf50"
+            fill="#e3ebde"
+            stroke="#779964"
             stroke-width="0.05"
+            rx="0.1"
           />
         </svg>
       </div>
     }
 
-    <div class="actions">
-      <button type="button" class="btn btn-secondary" (click)="cancel()">
-        Cancel
-      </button>
+    <div class="flex gap-3 justify-end pt-1">
+      <button type="button" class="btn btn-secondary" (click)="cancel()">Abbrechen</button>
       <button
         type="submit"
         class="btn btn-primary"
         [disabled]="gardenForm().invalid()"
       >
-        Create
+        Erstellen
       </button>
     </div>
   </form>

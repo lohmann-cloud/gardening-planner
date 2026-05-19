@@ -1,32 +1,41 @@
-<div class="login-page">
-  <div class="login-card">
-    <div class="brand">
-      <span class="leaf">&#127793;</span>
-      <h1>Garden Planner</h1>
+<div class="login-page min-h-screen flex items-center justify-center px-4">
+  <div class="login-card w-full max-w-md surface p-8 text-center">
+    <div class="brand-mark inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-leaf-100 text-leaf-700 text-2xl mb-5 shadow-sm">
+      🌱
     </div>
-    <p class="lead">Sign in to plan your garden and share it with others.</p>
+
+    <h1 class="text-2xl font-bold tracking-tight text-cream-800 mb-2">
+      Willkommen im Garden Planner
+    </h1>
+    <p class="text-cream-500 leading-relaxed mb-7">
+      Plane deine Beete, organisiere die Saison und teile deinen Garten mit anderen.
+    </p>
 
     @if (hasClientId()) {
-      <div class="google-btn-wrapper">
+      <div class="flex justify-center min-h-[44px] mb-2">
         <div #googleButton></div>
       </div>
     } @else {
-      <div class="config-warning">
-        <strong>Google login is not configured.</strong>
-        <p>
-          Set <code>googleClientId</code> in
-          <code>src/environments/environment.ts</code> and the
-          <code>GOOGLE_OAUTH_CLIENT_ID</code> env var on the backend, then
-          reload.
+      <div class="config-warning text-left bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 text-sm text-amber-900">
+        <strong class="block mb-1">Google Login ist nicht konfiguriert.</strong>
+        <p class="m-0 leading-relaxed">
+          Setze <code class="px-1 py-0.5 rounded bg-black/5 text-[0.8rem]">googleClientId</code> in
+          <code class="px-1 py-0.5 rounded bg-black/5 text-[0.8rem]">src/environments/environment.ts</code>
+          und die <code class="px-1 py-0.5 rounded bg-black/5 text-[0.8rem]">GOOGLE_OAUTH_CLIENT_ID</code>
+          Env-Variable im Backend.
         </p>
       </div>
     }
 
-    @if (busy()) { <p class="hint">Signing you in…</p> }
-    @if (error(); as msg) { <p class="error">{{ msg }}</p> }
+    @if (busy()) {
+      <p class="text-sm text-cream-500 mt-4">Anmeldung läuft …</p>
+    }
+    @if (error(); as msg) {
+      <p class="text-sm text-red-700 mt-4">{{ msg }}</p>
+    }
 
-    <p class="muted">
-      <a routerLink="/">Continue without signing in</a>
-    </p>
+    <div class="mt-8 pt-5 border-t border-cream-200 text-xs text-cream-400 tracking-wide uppercase">
+      Garden Planner · {{ year }}
+    </div>
   </div>
 </div>
