@@ -78,7 +78,7 @@
               <div class="fit-info">
                 <p><strong>{{ info.total }}</strong> Pflanzen passen in das gesamte Beet</p>
               </div>
-              <button class="btn-fill" (click)="fillBed()">&#127793; Gesamtes Beet füllen</button>
+              <button class="btn-fill" (click)="fillBed()">{{ plantIcon(sp) }} Gesamtes Beet füllen</button>
             }
 
             @if (selectionRect(); as rect) {
@@ -155,7 +155,7 @@
                     (mouseenter)="onCellMouseEnter(col, row)"
                   >
                     @if (plantSpotMap().has(col + ',' + row)) {
-                      <span class="spot-marker">&#127793;</span>
+                      <span class="spot-marker">{{ zv.icon }}</span>
                     }
                   </div>
                 } @else {
@@ -168,7 +168,7 @@
                     (mouseenter)="onCellMouseEnter(col, row)"
                   >
                     @if (previewSpotSet().has(col + ',' + row)) {
-                      <span class="spot-marker preview">&#127793;</span>
+                      <span class="spot-marker preview">{{ selectedPlant() ? plantIcon(selectedPlant()!) : '' }}</span>
                     }
                   </div>
                 }
@@ -181,7 +181,7 @@
           <span>1 Zelle = {{ cellSize() }} cm</span>
           <span>{{ cols() }} &times; {{ rows() }} Zellen</span>
           @if (selectedPlant(); as sp) {
-            <span class="legend-plant">&#127793; {{ sp.name }} ({{ sp.spacingCm }}cm / {{ sp.rowSpacingCm ?? sp.spacingCm }}cm)</span>
+            <span class="legend-plant">{{ plantIcon(sp) }} {{ sp.name }} ({{ sp.spacingCm }}cm / {{ sp.rowSpacingCm ?? sp.spacingCm }}cm)</span>
           }
         </div>
       </div>

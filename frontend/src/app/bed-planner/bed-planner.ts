@@ -17,6 +17,7 @@ interface ZoneView {
   zone: PlantingZone;
   color: string;
   colorLight: string;
+  icon: string;
   plantSpots: { col: number; row: number }[];
 }
 
@@ -95,7 +96,7 @@ export class BedPlannerComponent implements OnInit {
         })
       );
       for (const pos of valid) placed.push({ ...pos, spacingCells, rowSpacingCells });
-      views.push({ zone, color: this.plantColor(zone.plant), colorLight: this.plantColorLight(zone.plant), plantSpots: valid });
+      views.push({ zone, color: this.plantColor(zone.plant), colorLight: this.plantColorLight(zone.plant), icon: this.plantIcon(zone.plant), plantSpots: valid });
     }
     return views;
   });
@@ -356,6 +357,18 @@ export class BedPlannerComponent implements OnInit {
     for (let i = 0; i < plant.name.length; i++) hash = plant.name.charCodeAt(i) + ((hash << 5) - hash);
     const h = (((hash % 120) + 120) % 120) + 60;
     return `hsl(${h}, 55%, 55%)`;
+  }
+
+  protected plantIcon(plant: Plant): string {
+    switch (plant.category) {
+      case 'VEGETABLE': return '\u{1F955}';
+      case 'FRUIT':     return '\u{1F353}';
+      case 'HERB':      return '\u{1F33F}';
+      case 'FLOWER':    return '\u{1F338}';
+      case 'TREE':      return '\u{1F332}';
+      case 'SHRUB':     return '\u{1F333}';
+      default:          return '\u{1F331}';
+    }
   }
 
   protected plantColorLight(plant: Plant): string {
