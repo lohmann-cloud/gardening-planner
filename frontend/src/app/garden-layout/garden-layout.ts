@@ -110,7 +110,8 @@ export class GardenLayoutComponent implements OnInit {
       const cx = rotating.xM + rotating.widthM / 2;
       const cy = rotating.yM + rotating.lengthM / 2;
       const currentAngle = Math.atan2(pt.y - cy, pt.x - cx) * (180 / Math.PI);
-      this.rotationAngle.set(Math.round(this.rotationBedStart() + (currentAngle - this.rotationStartAngle())));
+      const rawAngle = this.rotationBedStart() + (currentAngle - this.rotationStartAngle());
+      this.rotationAngle.set(Math.round(rawAngle / 5) * 5);
       return;
     }
 
