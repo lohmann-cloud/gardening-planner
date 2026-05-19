@@ -25,15 +25,17 @@
                   stroke-width="0.05"
                 />
                 @for (b of g.beds; track b.id) {
-                  <rect
-                    [attr.x]="b.xM"
-                    [attr.y]="b.yM"
-                    [attr.width]="b.widthM"
-                    [attr.height]="b.lengthM"
-                    fill="#a5d6a7"
-                    stroke="#388e3c"
-                    stroke-width="0.03"
-                  />
+                  <g [attr.transform]="'rotate(' + (b.rotationDeg ?? 0) + ',' + (b.xM + b.widthM / 2) + ',' + (b.yM + b.lengthM / 2) + ')'">
+                    <rect
+                      [attr.x]="b.xM"
+                      [attr.y]="b.yM"
+                      [attr.width]="b.widthM"
+                      [attr.height]="b.lengthM"
+                      fill="#a5d6a7"
+                      stroke="#388e3c"
+                      stroke-width="0.03"
+                    />
+                  </g>
                 }
                 @for (o of g.obstacles; track o.id) {
                   <rect
