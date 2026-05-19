@@ -5,7 +5,11 @@
         <a [routerLink]="['/gardens', g.id]" class="back">&larr; {{ g.name }}</a>
       }
       <h1>{{ b.name }}</h1>
-      <span class="dims">{{ b.widthM }}m &times; {{ b.lengthM }}m &middot; {{ year() }}</span>
+      <span class="dims">{{ b.widthM }}m &times; {{ b.lengthM }}m &middot; {{ year() }}
+        @if ((b.rotationDeg ?? 0) !== 0) {
+          &middot; {{ b.rotationDeg }}°
+        }
+      </span>
     </header>
 
     <div class="planner-body">
@@ -137,6 +141,7 @@
         </div>
 
         <div class="canvas-world" [style.transform]="canvasTransform()">
+          <div class="bed-rotation-wrapper" [style.transform]="'rotate(' + (bed()?.rotationDeg ?? 0) + 'deg)'">
           <div
             class="bed-grid"
             [class.has-plant]="!!selectedPlant()"
@@ -178,6 +183,7 @@
                 }
               }
             }
+          </div>
           </div>
         </div>
 

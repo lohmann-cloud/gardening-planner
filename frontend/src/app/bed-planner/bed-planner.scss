@@ -269,6 +269,12 @@
 
 // ─── Bed Grid ────────────────────────────────────────────────────────────────
 
+.bed-rotation-wrapper {
+  display: inline-block;
+  transform-origin: center center;
+  padding: 40px;
+}
+
 .bed-grid {
   display: grid;
   background: #dcedc8;
