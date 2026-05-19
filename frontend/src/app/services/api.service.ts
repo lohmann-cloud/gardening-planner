@@ -54,6 +54,8 @@ export interface Plant {
   nutrientDemand?: NutrientDemand;
   rotationYears?: number;
   daysToMaturity?: number;
+  iconEmoji?: string;
+  colorHex?: string;
 }
 
 export interface PlantingCell {

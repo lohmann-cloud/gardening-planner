@@ -50,4 +50,10 @@ public class Plant extends PanacheEntityBase {
     public Integer rotationYears;
     public Integer daysToMaturity;
     public boolean isCustom = false;
+
+    @Column(name = "icon_emoji", length = 16)
+    public String iconEmoji;
+
+    @Column(name = "color_hex", length = 7)
+    public String colorHex;
 }
