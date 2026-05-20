@@ -47,6 +47,7 @@ export class BedPlannerComponent implements OnInit {
   protected readonly selection = signal<Selection | null>(null);
   protected readonly spacingFactor = signal(1.0);
   protected readonly sidebarTab = signal<'plants' | 'inventory'>('plants');
+  protected readonly paletteOpen = signal(false);
   protected readonly inventory = signal<InventoryItem[]>([]);
   private draggedInventoryPlant: Plant | null = null;
 
@@ -333,6 +334,10 @@ export class BedPlannerComponent implements OnInit {
 
   protected setSidebarTab(tab: 'plants' | 'inventory') {
     this.sidebarTab.set(tab);
+  }
+
+  protected togglePalette() {
+    this.paletteOpen.update((v) => !v);
   }
 
   protected onInventoryDragStart(plant: Plant, event: DragEvent) {

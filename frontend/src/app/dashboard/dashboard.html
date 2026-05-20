@@ -1,4 +1,4 @@
-<div class="dashboard max-w-5xl mx-auto px-6 pt-10 pb-16">
+<div class="dashboard max-w-5xl mx-auto px-4 sm:px-6 pt-8 sm:pt-10 pb-16">
   <header class="dashboard-header flex flex-wrap items-end justify-between gap-4 mb-8">
     <div>
       <p class="text-xs uppercase tracking-[0.15em] text-cream-500 mb-1">
@@ -43,7 +43,7 @@
   </header>
 
   @if (gardens().length) {
-    <div class="garden-grid grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-5">
+    <div class="garden-grid grid grid-cols-[repeat(auto-fill,minmax(min(100%,20rem),1fr))] gap-4 sm:gap-5">
       @for (g of gardens(); track g.id) {
         <div class="garden-card group card overflow-hidden relative transition-all duration-200 hover:-translate-y-1 hover:shadow-md hover:border-leaf-200">
           <a [routerLink]="['/gardens', g.id]" class="block text-inherit no-underline">

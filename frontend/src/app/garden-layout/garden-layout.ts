@@ -28,6 +28,7 @@ export class GardenLayoutComponent implements OnInit {
   protected readonly garden = signal<Garden | null>(null);
   protected readonly bedPlants = signal<Map<string, Plant[]>>(new Map());
   protected readonly tool = signal<Tool>('select');
+  protected readonly toolbarOpen = signal(false);
   protected readonly selectedBed = signal<GardenBed | null>(null);
   protected readonly selectedObstacle = signal<Obstacle | null>(null);
   protected readonly editingBed = signal(false);
@@ -299,12 +300,17 @@ export class GardenLayoutComponent implements OnInit {
     }
   }
 
+  protected toggleToolbar() {
+    this.toolbarOpen.update((v) => !v);
+  }
+
   protected onBedMouseDown(bed: GardenBed, event: MouseEvent) {
     event.stopPropagation();
     if (this.tool() !== 'select') return;
     this.selectedBed.set(bed);
     this.selectedObstacle.set(null);
     this.editingBed.set(false);
+    this.toolbarOpen.set(true);
     const pt = this.svgPoint(event);
     if (!pt) return;
     this.draggedBed.set(bed);
@@ -319,6 +325,7 @@ export class GardenLayoutComponent implements OnInit {
     this.selectedObstacle.set(obstacle);
     this.selectedBed.set(null);
     this.editingBed.set(false);
+    this.toolbarOpen.set(true);
   }
 
   protected onRotateHandleMouseDown(bed: GardenBed, event: MouseEvent) {
