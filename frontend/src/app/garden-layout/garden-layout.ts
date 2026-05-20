@@ -38,6 +38,15 @@ export class GardenLayoutComponent implements OnInit {
   protected readonly tool = signal<Tool>('select');
   protected readonly toolbarOpen = signal(false);
   protected readonly mode = signal<'beds' | 'plant'>('beds');
+  protected readonly plants = signal<Plant[]>([]);
+  protected readonly selectedPlant = signal<Plant | null>(null);
+  protected readonly plantSpacingFactor = signal(1);
+  protected readonly plantSearch = signal('');
+  protected readonly filteredPlants = computed(() => {
+    const q = this.plantSearch().toLowerCase();
+    const all = this.plants();
+    return q ? all.filter((p) => p.name.toLowerCase().includes(q) || p.botanicalName?.toLowerCase().includes(q)) : all;
+  });
   /** Per bed id: rendered plant spots (garden-metre centre of each spot, in the bed's unrotated frame). */
   protected readonly bedSpots = signal<Map<string, BedPlantSpot[]>>(new Map());
   protected readonly autoPlantOpen = signal(false);
@@ -169,6 +178,7 @@ export class GardenLayoutComponent implements OnInit {
     this.currentUserId.set(this.auth.user()?.id ?? null);
     this.restoreView();
     this.loadGarden(id);
+    this.api.getPlants().subscribe((p) => this.plants.set(p));
   }
 
   protected onCanvasMouseDown(event: Ptr) {
@@ -706,6 +716,18 @@ export class GardenLayoutComponent implements OnInit {
 
   protected onMinSpacingInput(event: Event) {
     this.minSpacingPct.set(+(event.target as HTMLInputElement).value);
+  }
+
+  protected selectPlantForPlanting(plant: Plant) {
+    this.selectedPlant.set(this.selectedPlant()?.id === plant.id ? null : plant);
+  }
+
+  protected onPlantSearch(event: Event) {
+    this.plantSearch.set((event.target as HTMLInputElement).value);
+  }
+
+  protected onPlantSpacingInput(event: Event) {
+    this.plantSpacingFactor.set(+(event.target as HTMLInputElement).value / 100);
   }
 
   protected readonly hasAutoPlantSelection = computed(() =>

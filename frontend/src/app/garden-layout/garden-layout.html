@@ -38,101 +38,131 @@
         class="toolbar absolute md:static inset-y-0 left-0 z-30 md:z-auto w-[80%] max-w-xs md:w-64 flex-shrink-0 bg-white md:bg-white/85 border-r border-cream-200 overflow-y-auto p-4 space-y-2 shadow-xl md:shadow-none transition-transform duration-200 md:!translate-x-0"
         [class.-translate-x-full]="!toolbarOpen()"
         [class.translate-x-0]="toolbarOpen()">
-        <button type="button"
-                class="btn btn-primary btn-sm w-full mb-3"
-                (click)="openAutoPlant()">
-          <span aria-hidden="true">🌱</span> Bestand verteilen
-        </button>
-        <button type="button"
-                class="btn btn-danger btn-sm w-full mb-3"
-                (click)="clearAllPlantings()"
-                [disabled]="clearBusy()">
-          <span aria-hidden="true">🗑</span> {{ clearBusy() ? '…' : 'Alle Pflanzungen entfernen' }}
-        </button>
-        <h3 class="text-xs uppercase tracking-[0.12em] text-cream-500 font-semibold m-0 mb-2">Werkzeuge</h3>
-        <div class="space-y-1.5">
+        @if (mode() === 'beds') {
           <button type="button"
-                  class="tool-btn"
-                  [class.active]="tool() === 'select'"
-                  (click)="tool.set('select')">
-            <span aria-hidden="true">◈</span> Auswählen
+                  class="btn btn-primary btn-sm w-full mb-3"
+                  (click)="openAutoPlant()">
+            <span aria-hidden="true">🌱</span> Bestand verteilen
           </button>
           <button type="button"
-                  class="tool-btn"
-                  [class.active]="tool() === 'bed'"
-                  (click)="tool.set('bed')">
-            <span aria-hidden="true">▢</span> Beet hinzufügen
+                  class="btn btn-danger btn-sm w-full mb-3"
+                  (click)="clearAllPlantings()"
+                  [disabled]="clearBusy()">
+            <span aria-hidden="true">🗑</span> {{ clearBusy() ? '…' : 'Alle Pflanzungen entfernen' }}
           </button>
-          <button type="button"
-                  class="tool-btn"
-                  [class.active]="tool() === 'obstacle'"
-                  (click)="tool.set('obstacle')">
-            <span aria-hidden="true">■</span> Hindernis hinzufügen
-          </button>
-        </div>
+          <h3 class="text-xs uppercase tracking-[0.12em] text-cream-500 font-semibold m-0 mb-2">Werkzeuge</h3>
+          <div class="space-y-1.5">
+            <button type="button"
+                    class="tool-btn"
+                    [class.active]="tool() === 'select'"
+                    (click)="tool.set('select')">
+              <span aria-hidden="true">◈</span> Auswählen
+            </button>
+            <button type="button"
+                    class="tool-btn"
+                    [class.active]="tool() === 'bed'"
+                    (click)="tool.set('bed')">
+              <span aria-hidden="true">▢</span> Beet hinzufügen
+            </button>
+            <button type="button"
+                    class="tool-btn"
+                    [class.active]="tool() === 'obstacle'"
+                    (click)="tool.set('obstacle')">
+              <span aria-hidden="true">■</span> Hindernis hinzufügen
+            </button>
+          </div>
 
-        <div class="border-t border-cream-200 my-4"></div>
+          <div class="border-t border-cream-200 my-4"></div>
 
-        @switch (tool()) {
-          @case ('bed') {
-            <div class="space-y-3">
-              <h4 class="text-sm font-bold text-cream-800 m-0">Neues Beet</h4>
-              <label class="field-label">Name<input class="field-input" type="text" [formField]="bedForm.name" /></label>
-              <label class="field-label">Breite (m)<input class="field-input" type="number" [formField]="bedForm.widthM" step="0.5" /></label>
-              <label class="field-label">Länge (m)<input class="field-input" type="number" [formField]="bedForm.lengthM" step="0.5" /></label>
-              <p class="text-xs text-cream-400 italic m-0">Klick auf das Raster, um zu platzieren</p>
-            </div>
-          }
-          @case ('obstacle') {
-            <div class="space-y-3">
-              <h4 class="text-sm font-bold text-cream-800 m-0">Neues Hindernis</h4>
-              <label class="field-label">Bezeichnung<input class="field-input" type="text" [formField]="obstacleForm.label" /></label>
-              <label class="field-label">Breite (m)<input class="field-input" type="number" [formField]="obstacleForm.widthM" step="0.5" /></label>
-              <label class="field-label">Länge (m)<input class="field-input" type="number" [formField]="obstacleForm.lengthM" step="0.5" /></label>
-              <p class="text-xs text-cream-400 italic m-0">Klick auf das Raster, um zu platzieren</p>
-            </div>
-          }
-          @case ('select') {
-            @if (selectedBed(); as bed) {
+          @switch (tool()) {
+            @case ('bed') {
               <div class="space-y-3">
-                @if (editingBed()) {
-                  <h4 class="text-sm font-bold text-cream-800 m-0">Beet bearbeiten</h4>
-                  <label class="field-label">Name<input class="field-input" type="text" [formField]="editBedForm.name" /></label>
-                  <label class="field-label">X-Position (m)<input class="field-input" type="number" [formField]="editBedForm.xM" step="0.01" /></label>
-                  <label class="field-label">Y-Position (m)<input class="field-input" type="number" [formField]="editBedForm.yM" step="0.01" /></label>
-                  <label class="field-label">Breite (m)<input class="field-input" type="number" [formField]="editBedForm.widthM" step="0.5" /></label>
-                  <label class="field-label">Länge (m)<input class="field-input" type="number" [formField]="editBedForm.lengthM" step="0.5" /></label>
-                  <label class="field-label">Rotation (°)<input class="field-input" type="number" [formField]="editBedForm.rotationDeg" step="1" /></label>
-                  <div class="flex gap-2 pt-1">
-                    <button class="btn btn-primary btn-sm flex-1" (click)="saveEditBed()">Speichern</button>
-                    <button class="btn btn-secondary btn-sm" (click)="cancelEditBed()">Abbrechen</button>
-                  </div>
-                } @else {
-                  <h4 class="text-base font-bold text-cream-800 m-0">{{ bed.name }}</h4>
-                  <div class="space-y-1 text-sm text-cream-500">
-                    <p class="m-0">{{ bed.widthM }}m × {{ bed.lengthM }}m</p>
-                    <p class="m-0">Position: ({{ bed.xM | number:'1.0-2' }}, {{ bed.yM | number:'1.0-2' }})</p>
-                    <p class="m-0">Rotation: {{ bed.rotationDeg ?? 0 }}°</p>
-                  </div>
-                  <p class="text-xs text-cream-400 italic m-0">Griff ziehen zum Drehen</p>
-                  <div class="flex flex-col gap-2 pt-1">
-                    <button class="btn btn-primary btn-sm" (click)="openBedPlanner()">🌿 Bepflanzen</button>
-                    <button class="btn btn-secondary btn-sm" (click)="startEditBed()">✎ Bearbeiten</button>
-                    <button class="btn btn-danger btn-sm" (click)="deleteBed(bed)">× Löschen</button>
-                  </div>
-                }
+                <h4 class="text-sm font-bold text-cream-800 m-0">Neues Beet</h4>
+                <label class="field-label">Name<input class="field-input" type="text" [formField]="bedForm.name" /></label>
+                <label class="field-label">Breite (m)<input class="field-input" type="number" [formField]="bedForm.widthM" step="0.5" /></label>
+                <label class="field-label">Länge (m)<input class="field-input" type="number" [formField]="bedForm.lengthM" step="0.5" /></label>
+                <p class="text-xs text-cream-400 italic m-0">Klick auf das Raster, um zu platzieren</p>
               </div>
             }
-            @if (selectedObstacle(); as obs) {
+            @case ('obstacle') {
               <div class="space-y-3">
-                <h4 class="text-base font-bold text-cream-800 m-0">{{ obs.label }}</h4>
-                <p class="text-sm text-cream-500 m-0">{{ obs.widthM }}m × {{ obs.lengthM }}m</p>
-                <button class="btn btn-danger btn-sm" (click)="deleteObstacle(obs)">× Löschen</button>
+                <h4 class="text-sm font-bold text-cream-800 m-0">Neues Hindernis</h4>
+                <label class="field-label">Bezeichnung<input class="field-input" type="text" [formField]="obstacleForm.label" /></label>
+                <label class="field-label">Breite (m)<input class="field-input" type="number" [formField]="obstacleForm.widthM" step="0.5" /></label>
+                <label class="field-label">Länge (m)<input class="field-input" type="number" [formField]="obstacleForm.lengthM" step="0.5" /></label>
+                <p class="text-xs text-cream-400 italic m-0">Klick auf das Raster, um zu platzieren</p>
               </div>
             }
-            @if (!selectedBed() && !selectedObstacle()) {
-              <p class="text-xs text-cream-400 italic m-0">Wähle ein Beet oder Hindernis im Garten aus.</p>
+            @case ('select') {
+              @if (selectedBed(); as bed) {
+                <div class="space-y-3">
+                  @if (editingBed()) {
+                    <h4 class="text-sm font-bold text-cream-800 m-0">Beet bearbeiten</h4>
+                    <label class="field-label">Name<input class="field-input" type="text" [formField]="editBedForm.name" /></label>
+                    <label class="field-label">X-Position (m)<input class="field-input" type="number" [formField]="editBedForm.xM" step="0.01" /></label>
+                    <label class="field-label">Y-Position (m)<input class="field-input" type="number" [formField]="editBedForm.yM" step="0.01" /></label>
+                    <label class="field-label">Breite (m)<input class="field-input" type="number" [formField]="editBedForm.widthM" step="0.5" /></label>
+                    <label class="field-label">Länge (m)<input class="field-input" type="number" [formField]="editBedForm.lengthM" step="0.5" /></label>
+                    <label class="field-label">Rotation (°)<input class="field-input" type="number" [formField]="editBedForm.rotationDeg" step="1" /></label>
+                    <div class="flex gap-2 pt-1">
+                      <button class="btn btn-primary btn-sm flex-1" (click)="saveEditBed()">Speichern</button>
+                      <button class="btn btn-secondary btn-sm" (click)="cancelEditBed()">Abbrechen</button>
+                    </div>
+                  } @else {
+                    <h4 class="text-base font-bold text-cream-800 m-0">{{ bed.name }}</h4>
+                    <div class="space-y-1 text-sm text-cream-500">
+                      <p class="m-0">{{ bed.widthM }}m × {{ bed.lengthM }}m</p>
+                      <p class="m-0">Position: ({{ bed.xM | number:'1.0-2' }}, {{ bed.yM | number:'1.0-2' }})</p>
+                      <p class="m-0">Rotation: {{ bed.rotationDeg ?? 0 }}°</p>
+                    </div>
+                    <p class="text-xs text-cream-400 italic m-0">Griff ziehen zum Drehen</p>
+                    <div class="flex flex-col gap-2 pt-1">
+                      <button class="btn btn-primary btn-sm" (click)="openBedPlanner()">🌿 Bepflanzen</button>
+                      <button class="btn btn-secondary btn-sm" (click)="startEditBed()">✎ Bearbeiten</button>
+                      <button class="btn btn-danger btn-sm" (click)="deleteBed(bed)">× Löschen</button>
+                    </div>
+                  }
+                </div>
+              }
+              @if (selectedObstacle(); as obs) {
+                <div class="space-y-3">
+                  <h4 class="text-base font-bold text-cream-800 m-0">{{ obs.label }}</h4>
+                  <p class="text-sm text-cream-500 m-0">{{ obs.widthM }}m × {{ obs.lengthM }}m</p>
+                  <button class="btn btn-danger btn-sm" (click)="deleteObstacle(obs)">× Löschen</button>
+                </div>
+              }
+              @if (!selectedBed() && !selectedObstacle()) {
+                <p class="text-xs text-cream-400 italic m-0">Wähle ein Beet oder Hindernis im Garten aus.</p>
+              }
             }
+          }
+        }
+        @if (mode() === 'plant') {
+          <input type="text" placeholder="Pflanze suchen…" [value]="plantSearch()" (input)="onPlantSearch($event)" class="field-input mb-2" />
+          <div class="space-y-1 max-h-[40vh] overflow-y-auto">
+            @for (p of filteredPlants(); track p.id) {
+              <button type="button"
+                      class="w-full text-left px-3 py-2 rounded-lg border transition-colors"
+                      [class.bg-leaf-50]="selectedPlant()?.id === p.id" [class.border-leaf-300]="selectedPlant()?.id === p.id"
+                      [class.bg-white]="selectedPlant()?.id !== p.id" [class.border-transparent]="selectedPlant()?.id !== p.id"
+                      (click)="selectPlantForPlanting(p)">
+                <span class="text-base">{{ p.iconEmoji ?? '🌱' }}</span>
+                <span class="font-semibold text-sm ml-2">{{ p.name }}</span>
+                <span class="block text-xs text-cream-500">{{ p.spacingCm }}cm</span>
+              </button>
+            }
+          </div>
+          @if (selectedPlant(); as sp) {
+            <div class="border-t border-cream-200 pt-3 mt-3">
+              <div class="flex justify-between text-xs text-cream-600 mb-1">
+                <span>Pflanzabstand</span>
+                <span class="font-bold text-leaf-700">{{ plantSpacingFactor() * 100 | number:'1.0-0' }}%</span>
+              </div>
+              <input type="range" min="30" max="100" step="5" [value]="plantSpacingFactor() * 100"
+                     (input)="onPlantSpacingInput($event)" class="w-full cursor-pointer" style="accent-color: var(--color-leaf-600);" />
+            </div>
+          } @else {
+            <p class="text-xs text-cream-400 italic mt-2">Wähle eine Pflanze, dann ziehe einen Bereich in einem Beet auf.</p>
           }
         }
       </aside>
