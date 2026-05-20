@@ -338,7 +338,7 @@
                     }
                   }
                 }
-                @if (tool() === 'select' && selectedBed()?.id === b.id) {
+                @if (mode() === 'beds' && tool() === 'select' && selectedBed()?.id === b.id) {
                   <line
                     [attr.x1]="cx" [attr.y1]="by"
                     [attr.x2]="cx" [attr.y2]="by - 0.4"

@@ -8,7 +8,7 @@ import { AuthService } from '../services/auth.service';
 import { plantColor, plantColorLight, plantIcon } from '../plant-utils';
 import { planInventory, AutoPlantBed, AutoPlantItem, AutoPlantResult } from '../planning/auto-plant';
 import { bedColsRows, cellTopLeftMeters, bedCellAtPoint } from '../planning/bed-coords';
-import { computeBedZoneViews } from '../planning/bed-zone-views';
+import { computeBedZoneViews, ZoneInput } from '../planning/bed-zone-views';
 
 type Tool = 'select' | 'bed' | 'obstacle';
 
@@ -49,6 +49,8 @@ export class GardenLayoutComponent implements OnInit {
   });
   /** Per bed id: rendered plant spots (garden-metre centre of each spot, in the bed's unrotated frame). */
   protected readonly bedSpots = signal<Map<string, BedPlantSpot[]>>(new Map());
+  /** Per bed id: the zone inputs (geometry + spacing) of its existing zones, in plan order. */
+  protected readonly bedZoneInputs = signal<Map<string, ZoneInput[]>>(new Map());
   protected readonly autoPlantOpen = signal(false);
   protected readonly autoPlantItems = signal<{ item: InventoryItem; plant: Plant; selected: boolean }[]>([]);
   protected readonly minSpacingPct = signal(100);
@@ -259,6 +261,7 @@ export class GardenLayoutComponent implements OnInit {
   }
 
   private updateGhost(event: Ptr) {
+    if (this.mode() !== 'beds') { this.ghost.set(null); return; }
     if (this.tool() === 'select' || !this.garden()) {
       this.ghost.set(null);
       return;
@@ -322,6 +325,7 @@ export class GardenLayoutComponent implements OnInit {
   }
 
   private handleBackgroundClick(event: Ptr) {
+    if (this.mode() !== 'beds') return;
     const g = this.garden();
     if (this.tool() === 'select') {
       this.clearSelection();
@@ -865,6 +869,7 @@ export class GardenLayoutComponent implements OnInit {
       forkJoin(planRequests).subscribe((plans) => {
         const plantsMap = new Map<string, Plant[]>();
         const spotsMap = new Map<string, BedPlantSpot[]>();
+        const inputsMap = new Map<string, ZoneInput[]>();
         const legend: { bedId: string; bedName: string; zoneId: string; plantName: string; color: string; count: number }[] = [];
         plans.forEach((plan, i) => {
           const bed = g.beds[i];
@@ -885,6 +890,7 @@ export class GardenLayoutComponent implements OnInit {
             spacingCm: z.plant.spacingCm, rowSpacingCm: z.plant.rowSpacingCm ?? z.plant.spacingCm,
             plant: z.plant,
           }));
+          inputsMap.set(bed.id, zoneInputs);
           const views = computeBedZoneViews(zoneInputs, cols, rows);
           views.forEach((v, idx) => {
             legend.push({ bedId: bed.id, bedName: bed.name, zoneId: plan.zones[idx].id, plantName: v.zone.plant.name, color: plantColor(v.zone.plant), count: v.spots.length });
@@ -904,6 +910,7 @@ export class GardenLayoutComponent implements OnInit {
         });
         this.bedPlants.set(plantsMap);
         this.bedSpots.set(spotsMap);
+        this.bedZoneInputs.set(inputsMap);
         this.bedZonesList.set(legend);
       });
     });
@@ -1060,12 +1067,14 @@ export class GardenLayoutComponent implements OnInit {
     this.plantSel.set(null);
     if (!sel || !bed || !g || !plant) return;
     const { cols, rows } = bedColsRows(bed);
-    const zoneInputs = [{
+    const newInput: ZoneInput = {
       minCol: sel.minCol, minRow: sel.minRow, maxCol: sel.maxCol, maxRow: sel.maxRow,
       spacingFactor: this.plantSpacingFactor(),
       spacingCm: plant.spacingCm, rowSpacingCm: plant.rowSpacingCm ?? plant.spacingCm,
-    }];
-    const plantCount = computeBedZoneViews(zoneInputs, cols, rows)[0].spots.length;
+    };
+    const existing = this.bedZoneInputs().get(bed.id) ?? [];
+    const views = computeBedZoneViews([...existing, newInput], cols, rows);
+    const plantCount = views[views.length - 1].spots.length;
     const year = new Date().getFullYear();
     this.api.addPlantingZone(g.id, bed.id, year, {
       plantId: plant.id, minCol: sel.minCol, minRow: sel.minRow, maxCol: sel.maxCol, maxRow: sel.maxRow,
