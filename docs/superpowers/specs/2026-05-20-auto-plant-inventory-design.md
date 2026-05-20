@@ -124,6 +124,21 @@ real geometry, so packing matches rendering.
   so a second run fills only what is still free (idempotent-ish, non-destructive).
 - Inventory is per-user; planting in this garden consumes it for all gardens.
 
+## Known limitation (cross-zone spot suppression)
+
+The bed planner renders a zone's plants from geometry and suppresses spots in a
+zone that fall within spacing distance of plants already placed by an earlier
+zone (`zoneViews`). Auto-plant sets each zone's `plantCount` to its rect's
+rendered count *in isolation*, so where two auto-planted species sit in adjacent
+rectangles, a few boundary plants of the later zone get suppressed on render —
+meaning inventory is consumed for a small number of plants that don't appear.
+The discrepancy is bounded to plants along shared zone borders. A precise fix
+would replicate the cumulative suppression while packing, but it is
+order-dependent and persisted zone order is not deterministic (`@OneToMany`
+without `@OrderBy`), so it is deferred. (The deterministic over-count — a zone
+rendering more than it consumed — is fixed: `plantCount` equals the rect's
+rendered count, with any surplus over stock flowing to the shopping list.)
+
 ## Out of scope
 
 - Crop-rotation / companion-planting / family or nutrient-demand rules.
