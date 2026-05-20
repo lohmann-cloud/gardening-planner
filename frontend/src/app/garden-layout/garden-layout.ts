@@ -57,6 +57,14 @@ export class GardenLayoutComponent implements OnInit {
   protected readonly autoPlantError = signal<string | null>(null);
   protected readonly clearBusy = signal(false);
   protected readonly bedZonesList = signal<{ bedId: string; bedName: string; zoneId: string; plantName: string; color: string; count: number }[]>([]);
+  protected readonly inventory = signal<InventoryItem[]>([]);
+  protected readonly plantTab = signal<'plants' | 'inventory'>('plants');
+  protected readonly inventoryPlants = computed(() => {
+    const all = this.plants();
+    return this.inventory().filter((i) => i.quantity > 0)
+      .map((i) => ({ item: i, plant: all.find((p) => p.id === i.plantId) }))
+      .filter((x): x is { item: InventoryItem; plant: Plant } => !!x.plant);
+  });
 
   // Plant-mode drawing
   private plantDrawBedId: string | null = null;
@@ -747,6 +755,10 @@ export class GardenLayoutComponent implements OnInit {
     this.selectedPlant.set(this.selectedPlant()?.id === plant.id ? null : plant);
   }
 
+  protected setPlantTab(tab: 'plants' | 'inventory') {
+    this.plantTab.set(tab);
+  }
+
   protected onPlantSearch(event: Event) {
     this.plantSearch.set((event.target as HTMLInputElement).value);
   }
@@ -846,6 +858,7 @@ export class GardenLayoutComponent implements OnInit {
   }
 
   private loadGarden(id: string) {
+    this.api.getInventory().subscribe((inv) => this.inventory.set(inv));
     const year = new Date().getFullYear();
     this.api.getGarden(id).subscribe((g) => {
       this.garden.set(g);

@@ -39,17 +39,6 @@
         [class.-translate-x-full]="!toolbarOpen()"
         [class.translate-x-0]="toolbarOpen()">
         @if (mode() === 'beds') {
-          <button type="button"
-                  class="btn btn-primary btn-sm w-full mb-3"
-                  (click)="openAutoPlant()">
-            <span aria-hidden="true">🌱</span> Bestand verteilen
-          </button>
-          <button type="button"
-                  class="btn btn-danger btn-sm w-full mb-3"
-                  (click)="clearAllPlantings()"
-                  [disabled]="clearBusy()">
-            <span aria-hidden="true">🗑</span> {{ clearBusy() ? '…' : 'Alle Pflanzungen entfernen' }}
-          </button>
           <h3 class="text-xs uppercase tracking-[0.12em] text-cream-500 font-semibold m-0 mb-2">Werkzeuge</h3>
           <div class="space-y-1.5">
             <button type="button"
@@ -138,20 +127,60 @@
           }
         }
         @if (mode() === 'plant') {
-          <input type="text" placeholder="Pflanze suchen…" [value]="plantSearch()" (input)="onPlantSearch($event)" class="field-input mb-2" />
-          <div class="space-y-1 max-h-[40vh] overflow-y-auto">
-            @for (p of filteredPlants(); track p.id) {
-              <button type="button"
-                      class="w-full text-left px-3 py-2 rounded-lg border transition-colors"
-                      [class.bg-leaf-50]="selectedPlant()?.id === p.id" [class.border-leaf-300]="selectedPlant()?.id === p.id"
-                      [class.bg-white]="selectedPlant()?.id !== p.id" [class.border-transparent]="selectedPlant()?.id !== p.id"
-                      (click)="selectPlantForPlanting(p)">
-                <span class="text-base">{{ p.iconEmoji ?? '🌱' }}</span>
-                <span class="font-semibold text-sm ml-2">{{ p.name }}</span>
-                <span class="block text-xs text-cream-500">{{ p.spacingCm }}cm</span>
-              </button>
-            }
+          <button type="button"
+                  class="btn btn-primary btn-sm w-full mb-3"
+                  (click)="openAutoPlant()">
+            <span aria-hidden="true">🌱</span> Bestand verteilen
+          </button>
+          <button type="button"
+                  class="btn btn-danger btn-sm w-full mb-3"
+                  (click)="clearAllPlantings()"
+                  [disabled]="clearBusy()">
+            <span aria-hidden="true">🗑</span> {{ clearBusy() ? '…' : 'Alle Pflanzungen entfernen' }}
+          </button>
+          <div class="flex rounded-lg bg-cream-100 p-0.5 gap-0.5 mb-2">
+            <button type="button" class="flex-1 text-xs font-semibold py-1.5 rounded-md transition-colors"
+                    [class.bg-white]="plantTab()==='plants'" [class.shadow-sm]="plantTab()==='plants'" [class.text-cream-800]="plantTab()==='plants'" [class.text-cream-500]="plantTab()!=='plants'"
+                    (click)="setPlantTab('plants')">Pflanzen</button>
+            <button type="button" class="flex-1 text-xs font-semibold py-1.5 rounded-md transition-colors"
+                    [class.bg-white]="plantTab()==='inventory'" [class.shadow-sm]="plantTab()==='inventory'" [class.text-cream-800]="plantTab()==='inventory'" [class.text-cream-500]="plantTab()!=='inventory'"
+                    (click)="setPlantTab('inventory')">Bestand</button>
           </div>
+          @if (plantTab() === 'plants') {
+            <input type="text" placeholder="Pflanze suchen…" [value]="plantSearch()" (input)="onPlantSearch($event)" class="field-input mb-2" />
+            <div class="space-y-1 max-h-[40vh] overflow-y-auto">
+              @for (p of filteredPlants(); track p.id) {
+                <button type="button"
+                        class="w-full text-left px-3 py-2 rounded-lg border transition-colors"
+                        [class.bg-leaf-50]="selectedPlant()?.id === p.id" [class.border-leaf-300]="selectedPlant()?.id === p.id"
+                        [class.bg-white]="selectedPlant()?.id !== p.id" [class.border-transparent]="selectedPlant()?.id !== p.id"
+                        (click)="selectPlantForPlanting(p)">
+                  <span class="text-base">{{ p.iconEmoji ?? '🌱' }}</span>
+                  <span class="font-semibold text-sm ml-2">{{ p.name }}</span>
+                  <span class="block text-xs text-cream-500">{{ p.spacingCm }}cm</span>
+                </button>
+              }
+            </div>
+          }
+          @if (plantTab() === 'inventory') {
+            @if (inventoryPlants().length) {
+              <div class="space-y-1 max-h-[40vh] overflow-y-auto">
+                @for (entry of inventoryPlants(); track entry.item.plantId) {
+                  <button type="button"
+                          class="w-full text-left flex items-center gap-2 px-3 py-2 rounded-lg border transition-colors"
+                          [class.bg-leaf-50]="selectedPlant()?.id === entry.item.plantId" [class.border-leaf-300]="selectedPlant()?.id === entry.item.plantId"
+                          [class.bg-white]="selectedPlant()?.id !== entry.item.plantId" [class.border-transparent]="selectedPlant()?.id !== entry.item.plantId"
+                          (click)="selectPlantForPlanting(entry.plant)">
+                    <span class="text-base w-6 text-center">{{ entry.item.plantIconEmoji ?? '🌱' }}</span>
+                    <span class="flex-1 font-semibold text-sm text-cream-800 truncate">{{ entry.plant.name }}</span>
+                    <span class="text-xs font-bold text-leaf-700">{{ entry.item.quantity }}</span>
+                  </button>
+                }
+              </div>
+            } @else {
+              <p class="text-xs text-cream-400 italic">Kein Bestand vorhanden.</p>
+            }
+          }
           @if (selectedPlant(); as sp) {
             <div class="border-t border-cream-200 pt-3 mt-3">
               <div class="flex justify-between text-xs text-cream-600 mb-1">
