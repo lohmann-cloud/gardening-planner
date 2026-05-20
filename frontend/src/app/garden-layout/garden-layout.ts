@@ -3,9 +3,10 @@ import { DecimalPipe } from '@angular/common';
 import { forkJoin } from 'rxjs';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { form, FormField, min, required } from '@angular/forms/signals';
-import { ApiService, Garden, GardenBed, Membership, Obstacle, Plant } from '../services/api.service';
+import { ApiService, Garden, GardenBed, Membership, Obstacle, Plant, InventoryItem } from '../services/api.service';
 import { AuthService } from '../services/auth.service';
 import { plantColor, plantColorLight, plantIcon } from '../plant-utils';
+import { planInventory, AutoPlantBed, AutoPlantItem, AutoPlantResult } from '../planning/auto-plant';
 
 type Tool = 'select' | 'bed' | 'obstacle';
 
@@ -32,6 +33,11 @@ export class GardenLayoutComponent implements OnInit {
   protected readonly bedPlants = signal<Map<string, Plant[]>>(new Map());
   protected readonly tool = signal<Tool>('select');
   protected readonly toolbarOpen = signal(false);
+  protected readonly autoPlantOpen = signal(false);
+  protected readonly autoPlantItems = signal<{ item: InventoryItem; plant: Plant; selected: boolean }[]>([]);
+  protected readonly minSpacingPct = signal(100);
+  protected readonly autoPlantBusy = signal(false);
+  protected readonly autoPlantResult = signal<AutoPlantResult | null>(null);
   protected readonly selectedBed = signal<GardenBed | null>(null);
   protected readonly selectedObstacle = signal<Obstacle | null>(null);
   protected readonly editingBed = signal(false);
@@ -638,6 +644,93 @@ export class GardenLayoutComponent implements OnInit {
   private canvasRect(): DOMRect {
     const container = this.svgRef.nativeElement.closest('.canvas-container') as HTMLElement;
     return container.getBoundingClientRect();
+  }
+
+  protected openAutoPlant() {
+    this.autoPlantResult.set(null);
+    this.autoPlantItems.set([]);
+    this.minSpacingPct.set(100);
+    this.autoPlantOpen.set(true);
+    this.toolbarOpen.set(false);
+    forkJoin({ inv: this.api.getInventory(), plants: this.api.getPlants() }).subscribe(({ inv, plants }) => {
+      const byId = new Map(plants.map((p) => [p.id, p]));
+      this.autoPlantItems.set(
+        inv.filter((i) => i.quantity > 0 && byId.has(i.plantId))
+          .map((item) => ({ item, plant: byId.get(item.plantId)!, selected: true })),
+      );
+    });
+  }
+
+  protected closeAutoPlant() {
+    this.autoPlantOpen.set(false);
+  }
+
+  protected toggleAutoPlantItem(plantId: string) {
+    this.autoPlantItems.update((list) =>
+      list.map((e) => (e.item.plantId === plantId ? { ...e, selected: !e.selected } : e)),
+    );
+  }
+
+  protected onMinSpacingInput(event: Event) {
+    this.minSpacingPct.set(+(event.target as HTMLInputElement).value);
+  }
+
+  protected readonly hasAutoPlantSelection = computed(() =>
+    this.autoPlantItems().some((e) => e.selected),
+  );
+
+  protected runAutoPlant() {
+    const g = this.garden();
+    const chosen = this.autoPlantItems().filter((e) => e.selected);
+    if (!g || !chosen.length) return;
+    const items: AutoPlantItem[] = chosen.map((e) => ({
+      plant: { id: e.plant.id, name: e.plant.name, spacingCm: e.plant.spacingCm, rowSpacingCm: e.plant.rowSpacingCm ?? e.plant.spacingCm },
+      quantity: e.item.quantity,
+    }));
+    if (!g.beds.length) {
+      this.autoPlantResult.set(planInventory([], items, this.minSpacingPct() / 100));
+      return;
+    }
+    this.autoPlantBusy.set(true);
+    const year = new Date().getFullYear();
+    forkJoin(g.beds.map((b) => this.api.getPlantingPlan(g.id, b.id, year))).subscribe({
+      next: (plans) => {
+      const beds: AutoPlantBed[] = g.beds.map((b, i) => {
+        const cols = Math.floor((b.widthM * 100) / 5);
+        const rows = Math.floor((b.lengthM * 100) / 5);
+        const occupied = new Set<string>();
+        for (const z of plans[i].zones)
+          for (let r = z.minRow; r <= z.maxRow; r++)
+            for (let c = z.minCol; c <= z.maxCol; c++) occupied.add(`${c},${r}`);
+        for (const cell of plans[i].cells) occupied.add(`${cell.col},${cell.row}`);
+        return { id: b.id, cols, rows, occupied };
+      });
+      const result = planInventory(beds, items, this.minSpacingPct() / 100);
+      if (!result.zones.length) {
+        this.autoPlantBusy.set(false);
+        this.autoPlantResult.set(result);
+        return;
+      }
+      forkJoin(
+        result.zones.map((z) => this.api.addPlantingZone(g.id, z.bedId, year, {
+          plantId: z.plantId, minCol: z.minCol, minRow: z.minRow, maxCol: z.maxCol, maxRow: z.maxRow,
+          spacingFactor: z.spacingFactor, plantCount: z.plantCount,
+        })),
+      ).subscribe({
+        next: () => {
+          this.autoPlantBusy.set(false);
+          this.autoPlantResult.set(result);
+          this.loadGarden(g.id);
+        },
+        error: () => this.autoPlantBusy.set(false),
+      });
+      },
+      error: () => this.autoPlantBusy.set(false),
+    });
+  }
+
+  protected autoPlantPlacedCount(): number {
+    return (this.autoPlantResult()?.zones ?? []).reduce((n, z) => n + z.plantCount, 0);
   }
 
   protected bedFill(bedId: string): string {
