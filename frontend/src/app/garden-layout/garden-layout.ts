@@ -1,6 +1,6 @@
 import { Component, computed, effect, ElementRef, inject, OnInit, signal, ViewChild } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
-import { forkJoin } from 'rxjs';
+import { forkJoin, from, of, concatMap, toArray, catchError } from 'rxjs';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { form, FormField, min, required } from '@angular/forms/signals';
 import { ApiService, Garden, GardenBed, Membership, Obstacle, Plant, InventoryItem } from '../services/api.service';
@@ -39,6 +39,7 @@ export class GardenLayoutComponent implements OnInit {
   protected readonly autoPlantBusy = signal(false);
   protected readonly autoPlantResult = signal<AutoPlantResult | null>(null);
   protected readonly autoPlantError = signal<string | null>(null);
+  protected readonly clearBusy = signal(false);
   protected readonly selectedBed = signal<GardenBed | null>(null);
   protected readonly selectedObstacle = signal<Obstacle | null>(null);
   protected readonly editingBed = signal(false);
@@ -647,6 +648,29 @@ export class GardenLayoutComponent implements OnInit {
     return container.getBoundingClientRect();
   }
 
+  protected clearAllPlantings() {
+    const g = this.garden();
+    if (!g || !g.beds.length || this.clearBusy()) return;
+    if (!confirm('Alle Pflanzungen in diesem Garten für dieses Jahr entfernen? Der Bestand wird dabei zurückgebucht.')) return;
+    this.clearBusy.set(true);
+    const year = new Date().getFullYear();
+    // Sequential: each bed's plan deletion restores inventory (read-modify-write),
+    // so parallel deletes would race; 404 (bed without a plan) is ignored.
+    from(g.beds).pipe(
+      concatMap((b) => this.api.deletePlantingPlan(g.id, b.id, year).pipe(catchError(() => of(null)))),
+      toArray(),
+    ).subscribe({
+      next: () => {
+        this.clearBusy.set(false);
+        this.loadGarden(g.id);
+      },
+      error: () => {
+        this.clearBusy.set(false);
+        this.loadGarden(g.id);
+      },
+    });
+  }
+
   protected openAutoPlant() {
     this.autoPlantResult.set(null);
     this.autoPlantError.set(null);
@@ -713,11 +737,15 @@ export class GardenLayoutComponent implements OnInit {
         this.autoPlantResult.set(result);
         return;
       }
-      forkJoin(
-        result.zones.map((z) => this.api.addPlantingZone(g.id, z.bedId, year, {
+      // Create zones sequentially: addZone consumes inventory with a
+      // read-modify-write, so parallel calls for the same plant would lose
+      // updates. concatMap serialises them like the manual planting flow.
+      from(result.zones).pipe(
+        concatMap((z) => this.api.addPlantingZone(g.id, z.bedId, year, {
           plantId: z.plantId, minCol: z.minCol, minRow: z.minRow, maxCol: z.maxCol, maxRow: z.maxRow,
           spacingFactor: z.spacingFactor, plantCount: z.plantCount,
         })),
+        toArray(),
       ).subscribe({
         next: () => {
           this.autoPlantBusy.set(false);

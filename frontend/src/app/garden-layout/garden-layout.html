@@ -31,6 +31,12 @@
                 (click)="openAutoPlant()">
           <span aria-hidden="true">🌱</span> Bestand verteilen
         </button>
+        <button type="button"
+                class="btn btn-danger btn-sm w-full mb-3"
+                (click)="clearAllPlantings()"
+                [disabled]="clearBusy()">
+          <span aria-hidden="true">🗑</span> {{ clearBusy() ? '…' : 'Alle Pflanzungen entfernen' }}
+        </button>
         <h3 class="text-xs uppercase tracking-[0.12em] text-cream-500 font-semibold m-0 mb-2">Werkzeuge</h3>
         <div class="space-y-1.5">
           <button type="button"

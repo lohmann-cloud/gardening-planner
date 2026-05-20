@@ -204,6 +204,10 @@ export class ApiService {
     return this.http.delete(`${API}/gardens/${gardenId}/beds/${bedId}/plantings/${year}/zones/${zoneId}`);
   }
 
+  deletePlantingPlan(gardenId: string, bedId: string, year: number) {
+    return this.http.delete(`${API}/gardens/${gardenId}/beds/${bedId}/plantings/${year}`);
+  }
+
   // Memberships
   getMemberships(gardenId: string) {
     return this.http.get<Membership[]>(`${API}/gardens/${gardenId}/memberships`);
