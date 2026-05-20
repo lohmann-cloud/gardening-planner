@@ -493,6 +493,7 @@ export class GardenLayoutComponent implements OnInit {
   protected deleteBed(bed: GardenBed) {
     const g = this.garden();
     if (!g) return;
+    if (!confirm(`„${bed.name}" löschen? Damit werden auch alle Pflanzungen in diesem Beet entfernt.`)) return;
     this.api.deleteBed(g.id, bed.id).subscribe(() => {
       this.selectedBed.set(null);
       this.editingBed.set(false);
@@ -503,6 +504,7 @@ export class GardenLayoutComponent implements OnInit {
   protected deleteObstacle(obstacle: Obstacle) {
     const g = this.garden();
     if (!g) return;
+    if (!confirm(`„${obstacle.label}" löschen?`)) return;
     this.api.deleteObstacle(g.id, obstacle.id).subscribe(() => {
       this.selectedObstacle.set(null);
       this.loadGarden(g.id);
