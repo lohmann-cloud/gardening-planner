@@ -1,4 +1,5 @@
 import { planInventory, AutoPlantBed, AutoPlantItem } from './auto-plant';
+import { plantPositions } from './plant-grid';
 
 const plant = (id: string, spacingCm: number) =>
   ({ id, name: id, spacingCm, rowSpacingCm: spacingCm });
@@ -82,5 +83,17 @@ describe('auto-plant', () => {
     const res = planInventory(beds, [], 0.5);
     expect(res.zones).toEqual([]);
     expect(res.unplaced).toEqual([]);
+  });
+
+  it('consumes exactly the plants each zone renders (no clipped/phantom counts)', () => {
+    const beds = [emptyBed('b', 20, 20)];
+    const items: AutoPlantItem[] = [{ plant: plant('tomato', 30), quantity: 3 }];
+    const res = planInventory(beds, items, 0.5);
+    const rendered = res.zones.reduce(
+      (n, z) => n + plantPositions(z.minCol, z.minRow, z.maxCol, z.maxRow, 20, 20, 30, 30, z.spacingFactor).length,
+      0,
+    );
+    const consumed = res.zones.reduce((n, z) => n + z.plantCount, 0);
+    expect(consumed).toBe(rendered);
   });
 });

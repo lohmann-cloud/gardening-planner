@@ -38,6 +38,7 @@ export class GardenLayoutComponent implements OnInit {
   protected readonly minSpacingPct = signal(100);
   protected readonly autoPlantBusy = signal(false);
   protected readonly autoPlantResult = signal<AutoPlantResult | null>(null);
+  protected readonly autoPlantError = signal<string | null>(null);
   protected readonly selectedBed = signal<GardenBed | null>(null);
   protected readonly selectedObstacle = signal<Obstacle | null>(null);
   protected readonly editingBed = signal(false);
@@ -648,6 +649,7 @@ export class GardenLayoutComponent implements OnInit {
 
   protected openAutoPlant() {
     this.autoPlantResult.set(null);
+    this.autoPlantError.set(null);
     this.autoPlantItems.set([]);
     this.minSpacingPct.set(100);
     this.autoPlantOpen.set(true);
@@ -722,10 +724,18 @@ export class GardenLayoutComponent implements OnInit {
           this.autoPlantResult.set(result);
           this.loadGarden(g.id);
         },
-        error: () => this.autoPlantBusy.set(false),
+        error: () => {
+          this.autoPlantBusy.set(false);
+          this.autoPlantError.set('Beim Verteilen ist ein Fehler aufgetreten. Bitte erneut versuchen.');
+          this.loadGarden(g.id);
+        },
       });
       },
-      error: () => this.autoPlantBusy.set(false),
+      error: () => {
+        this.autoPlantBusy.set(false);
+        this.autoPlantError.set('Beim Verteilen ist ein Fehler aufgetreten. Bitte erneut versuchen.');
+        this.loadGarden(g.id);
+      },
     });
   }
 

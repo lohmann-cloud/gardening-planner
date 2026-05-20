@@ -311,6 +311,9 @@
                 <span class="block text-xs text-cream-400 mt-1">Wie weit der empfohlene Abstand maximal unterschritten werden darf.</span>
               </label>
 
+              @if (autoPlantError(); as err) {
+                <p class="text-sm text-red-700 m-0 mb-3">{{ err }}</p>
+              }
               <div class="flex items-center gap-2 justify-end">
                 <button class="btn btn-secondary btn-sm" type="button" (click)="closeAutoPlant()">Abbrechen</button>
                 <button class="btn btn-primary btn-sm" type="button"

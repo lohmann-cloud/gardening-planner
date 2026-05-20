@@ -133,7 +133,7 @@ function packAtFactor(allRects: Rect[], items: AutoPlantItem[], f: number) {
       zones.push({
         bedId: rect.bedId, plantId: p.id,
         minCol: rect.col, minRow: rect.row, maxCol: rect.col + subW - 1, maxRow: rect.row + subH - 1,
-        spacingFactor: f, plantCount: Math.min(count, remaining),
+        spacingFactor: f, plantCount: count,
       });
       remaining -= Math.min(count, remaining);
     }
