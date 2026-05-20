@@ -9,6 +9,18 @@
         <h1 class="text-base sm:text-lg font-bold text-cream-800 truncate m-0">{{ g.name }}</h1>
         <span class="dims hidden sm:inline text-xs text-cream-400 whitespace-nowrap">{{ g.widthM }}m × {{ g.lengthM }}m</span>
       </div>
+      <div class="mode-toggle inline-flex rounded-lg bg-cream-100 p-0.5 gap-0.5 flex-shrink-0">
+        <button type="button"
+                class="text-xs font-semibold py-1.5 px-3 rounded-md transition-colors"
+                [class.bg-white]="mode() === 'beds'" [class.shadow-sm]="mode() === 'beds'"
+                [class.text-cream-800]="mode() === 'beds'" [class.text-cream-500]="mode() !== 'beds'"
+                (click)="mode.set('beds')">Beet</button>
+        <button type="button"
+                class="text-xs font-semibold py-1.5 px-3 rounded-md transition-colors"
+                [class.bg-white]="mode() === 'plant'" [class.shadow-sm]="mode() === 'plant'"
+                [class.text-cream-800]="mode() === 'plant'" [class.text-cream-500]="mode() !== 'plant'"
+                (click)="mode.set('plant')">Pflanzen</button>
+      </div>
       <button class="btn btn-ghost btn-sm flex-shrink-0" type="button" (click)="startEditGarden()" title="Garten bearbeiten">
         <span aria-hidden="true">✎</span>
         <span class="hidden sm:inline">Bearbeiten</span>
@@ -227,6 +239,13 @@
                     [attr.opacity]="isDragging ? 0.7 : 1"
                     pointer-events="none"
                   >{{ icons }}</text>
+                }
+                @if (mode() === 'plant') {
+                  @for (s of bedSpotsFor(b.id); track $index) {
+                    <circle [attr.cx]="s.x" [attr.cy]="s.y" r="0.06"
+                            [attr.fill]="s.color" stroke="#ffffff" stroke-width="0.012"
+                            pointer-events="none" opacity="0.9" />
+                  }
                 }
                 @if (tool() === 'select' && selectedBed()?.id === b.id) {
                   <line

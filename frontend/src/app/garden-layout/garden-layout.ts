@@ -7,11 +7,15 @@ import { ApiService, Garden, GardenBed, Membership, Obstacle, Plant, InventoryIt
 import { AuthService } from '../services/auth.service';
 import { plantColor, plantColorLight, plantIcon } from '../plant-utils';
 import { planInventory, AutoPlantBed, AutoPlantItem, AutoPlantResult } from '../planning/auto-plant';
+import { bedColsRows, cellTopLeftMeters } from '../planning/bed-coords';
+import { computeBedZoneViews } from '../planning/bed-zone-views';
 
 type Tool = 'select' | 'bed' | 'obstacle';
 
 /** Minimal pointer shape shared by MouseEvent and Touch so handlers serve both. */
 type Ptr = { clientX: number; clientY: number; target: EventTarget | null; button?: number };
+
+interface BedPlantSpot { x: number; y: number; color: string; }
 
 @Component({
   selector: 'app-garden-layout',
@@ -33,6 +37,9 @@ export class GardenLayoutComponent implements OnInit {
   protected readonly bedPlants = signal<Map<string, Plant[]>>(new Map());
   protected readonly tool = signal<Tool>('select');
   protected readonly toolbarOpen = signal(false);
+  protected readonly mode = signal<'beds' | 'plant'>('beds');
+  /** Per bed id: rendered plant spots (garden-metre centre of each spot, in the bed's unrotated frame). */
+  protected readonly bedSpots = signal<Map<string, BedPlantSpot[]>>(new Map());
   protected readonly autoPlantOpen = signal(false);
   protected readonly autoPlantItems = signal<{ item: InventoryItem; plant: Plant; selected: boolean }[]>([]);
   protected readonly minSpacingPct = signal(100);
@@ -776,6 +783,10 @@ export class GardenLayoutComponent implements OnInit {
     return plants?.length ? plantColorLight(plants[0]) : '#a5d6a7';
   }
 
+  protected bedSpotsFor(bedId: string): BedPlantSpot[] {
+    return this.bedSpots().get(bedId) ?? [];
+  }
+
   protected bedStroke(bedId: string): string {
     const plants = this.bedPlants().get(bedId);
     return plants?.length ? plantColor(plants[0]) : '#2e7d32';
@@ -794,8 +805,10 @@ export class GardenLayoutComponent implements OnInit {
       if (!g.beds.length) return;
       const planRequests = g.beds.map((b) => this.api.getPlantingPlan(id, b.id, year));
       forkJoin(planRequests).subscribe((plans) => {
-        const map = new Map<string, Plant[]>();
+        const plantsMap = new Map<string, Plant[]>();
+        const spotsMap = new Map<string, BedPlantSpot[]>();
         plans.forEach((plan, i) => {
+          const bed = g.beds[i];
           const seen = new Set<string>();
           const plants: Plant[] = [];
           for (const z of plan.zones) {
@@ -804,9 +817,31 @@ export class GardenLayoutComponent implements OnInit {
           for (const c of plan.cells) {
             if (!seen.has(c.plant.id)) { seen.add(c.plant.id); plants.push(c.plant); }
           }
-          if (plants.length) map.set(g.beds[i].id, plants);
+          if (plants.length) plantsMap.set(bed.id, plants);
+
+          const { cols, rows } = bedColsRows(bed);
+          const zoneInputs = plan.zones.map((z) => ({
+            minCol: z.minCol, minRow: z.minRow, maxCol: z.maxCol, maxRow: z.maxRow,
+            spacingFactor: z.spacingFactor ?? 1,
+            spacingCm: z.plant.spacingCm, rowSpacingCm: z.plant.rowSpacingCm ?? z.plant.spacingCm,
+            plant: z.plant,
+          }));
+          const views = computeBedZoneViews(zoneInputs, cols, rows);
+          const spots: BedPlantSpot[] = [];
+          for (const v of views) {
+            for (const s of v.spots) {
+              const tl = cellTopLeftMeters(s.col, s.row, bed);
+              spots.push({ x: tl.x + 0.025, y: tl.y + 0.025, color: plantColor(v.zone.plant) });
+            }
+          }
+          for (const c of plan.cells) {
+            const tl = cellTopLeftMeters(c.col, c.row, bed);
+            spots.push({ x: tl.x + 0.025, y: tl.y + 0.025, color: plantColor(c.plant) });
+          }
+          if (spots.length) spotsMap.set(bed.id, spots);
         });
-        this.bedPlants.set(map);
+        this.bedPlants.set(plantsMap);
+        this.bedSpots.set(spotsMap);
       });
     });
   }
