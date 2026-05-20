@@ -148,6 +148,14 @@ button {
   font-weight: 600;
 }
 
+/* Visible keyboard focus for interactive elements (mouse clicks stay clean) */
+a:focus-visible,
+button:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--color-leaf-500);
+  outline-offset: 2px;
+}
+
 ::-webkit-scrollbar {
   width: 10px;
   height: 10px;
@@ -316,6 +324,16 @@ button {
 @media (pointer: coarse) {
   .btn,
   .btn-sm {
+    min-height: 2.75rem;
+  }
+
+  /* Canvas zoom + tool buttons (not .btn) also need finger-sized targets */
+  .zoom-btn {
+    min-height: 2.5rem;
+    min-width: 2.5rem;
+  }
+
+  .tool-btn {
     min-height: 2.75rem;
   }
 }

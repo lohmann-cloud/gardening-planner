@@ -86,7 +86,7 @@ export class GardenLayoutComponent implements OnInit {
     return lines;
   });
 
-  private readonly bedModel = signal({ name: 'Bed', widthM: 2, lengthM: 1 });
+  private readonly bedModel = signal({ name: 'Beet', widthM: 2, lengthM: 1 });
   protected readonly bedForm = form(this.bedModel, (path) => {
     required(path.name);
     min(path.widthM, 0.5);
@@ -109,7 +109,7 @@ export class GardenLayoutComponent implements OnInit {
     min(path.lengthM, 1);
   });
 
-  private readonly obstacleModel = signal({ label: 'Shed', widthM: 2, lengthM: 2 });
+  private readonly obstacleModel = signal({ label: 'Schuppen', widthM: 2, lengthM: 2 });
   protected readonly obstacleForm = form(this.obstacleModel, (path) => {
     required(path.label);
     min(path.widthM, 0.1);
@@ -293,7 +293,7 @@ export class GardenLayoutComponent implements OnInit {
         lengthM: this.bedForm.lengthM().value(),
       }).subscribe(() => {
         this.loadGarden(g.id);
-        this.bedForm.name().value.set(`Bed ${(g.beds.length ?? 0) + 2}`);
+        this.bedForm.name().value.set(`Beet ${(g.beds.length ?? 0) + 2}`);
       });
     } else if (this.tool() === 'obstacle') {
       this.clearSelection();
@@ -445,7 +445,7 @@ export class GardenLayoutComponent implements OnInit {
       },
       error: (err) => {
         this.inviteBusy.set(false);
-        this.inviteError.set(err?.error?.message ?? 'Could not invite that user');
+        this.inviteError.set(err?.error?.message ?? 'Diese Person konnte nicht eingeladen werden');
       },
     });
   }
@@ -453,7 +453,7 @@ export class GardenLayoutComponent implements OnInit {
   protected removeMember(m: Membership) {
     const g = this.garden();
     if (!g) return;
-    if (!confirm(`Remove ${m.name || m.email} from this garden?`)) return;
+    if (!confirm(`${m.name || m.email} aus diesem Garten entfernen?`)) return;
     this.api.removeMember(g.id, m.userId).subscribe(() => {
       this.memberships.update((list) => list.filter((x) => x.userId !== m.userId));
     });
@@ -479,7 +479,7 @@ export class GardenLayoutComponent implements OnInit {
   protected deleteGarden() {
     const g = this.garden();
     if (!g) return;
-    if (!confirm(`Delete "${g.name}"? This will also remove its beds and plantings.`)) return;
+    if (!confirm(`„${g.name}" löschen? Damit werden auch alle Beete und Pflanzungen entfernt.`)) return;
     this.api.deleteGarden(g.id).subscribe(() => this.router.navigate(['/']));
   }
 

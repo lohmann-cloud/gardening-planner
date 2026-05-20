@@ -52,7 +52,7 @@ export class DashboardComponent implements OnInit {
   protected deleteGarden(g: Garden, event: Event) {
     event.preventDefault();
     event.stopPropagation();
-    if (confirm(`Delete "${g.name}"?`)) {
+    if (confirm(`„${g.name}" wirklich löschen?`)) {
       this.api.deleteGarden(g.id).subscribe(() => this.loadGardens());
     }
   }

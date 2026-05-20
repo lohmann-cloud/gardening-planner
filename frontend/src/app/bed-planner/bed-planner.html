@@ -333,6 +333,16 @@
           </div>
         </div>
 
+        @if (selectedPlant() && selectionRect()) {
+          <div class="assign-bar md:hidden absolute bottom-16 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2 bg-white border border-cream-200 rounded-xl px-3 py-2 shadow-lg">
+            <span class="text-xs text-cream-600 whitespace-nowrap">
+              <strong class="text-clay-700">{{ previewSpots().length }}</strong> Pflanzen
+            </span>
+            <button class="btn btn-primary btn-sm" type="button" (click)="confirmSelection()">✓ Zuweisen</button>
+            <button class="btn btn-secondary btn-sm" type="button" (click)="cancelSelection()" aria-label="Abbrechen">×</button>
+          </div>
+        }
+
         <div class="grid-legend absolute bottom-4 left-1/2 -translate-x-1/2 inline-flex items-center gap-3 sm:gap-5 max-w-[calc(100vw-1.5rem)] bg-white/95 backdrop-blur border border-cream-200 rounded-xl px-3 sm:px-4 py-1.5 shadow-md text-[11px] sm:text-xs text-cream-500 whitespace-nowrap pointer-events-none">
           <span>1 Zelle = {{ cellSize() }} cm</span>
           <span>{{ cols() }} × {{ rows() }} Zellen</span>
