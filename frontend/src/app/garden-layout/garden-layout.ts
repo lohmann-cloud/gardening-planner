@@ -7,7 +7,7 @@ import { ApiService, Garden, GardenBed, Membership, Obstacle, Plant, InventoryIt
 import { AuthService } from '../services/auth.service';
 import { plantColor, plantColorLight, plantIcon } from '../plant-utils';
 import { planInventory, AutoPlantBed, AutoPlantItem, AutoPlantResult } from '../planning/auto-plant';
-import { bedColsRows, cellTopLeftMeters } from '../planning/bed-coords';
+import { bedColsRows, cellTopLeftMeters, bedCellAtPoint } from '../planning/bed-coords';
 import { computeBedZoneViews } from '../planning/bed-zone-views';
 
 type Tool = 'select' | 'bed' | 'obstacle';
@@ -56,6 +56,12 @@ export class GardenLayoutComponent implements OnInit {
   protected readonly autoPlantResult = signal<AutoPlantResult | null>(null);
   protected readonly autoPlantError = signal<string | null>(null);
   protected readonly clearBusy = signal(false);
+
+  // Plant-mode drawing
+  private plantDrawBedId: string | null = null;
+  private plantAnchorCell: { col: number; row: number } | null = null;
+  protected readonly plantSel = signal<{ bedId: string; minCol: number; minRow: number; maxCol: number; maxRow: number } | null>(null);
+
   protected readonly selectedBed = signal<GardenBed | null>(null);
   protected readonly selectedObstacle = signal<Obstacle | null>(null);
   protected readonly editingBed = signal(false);
@@ -183,12 +189,14 @@ export class GardenLayoutComponent implements OnInit {
 
   protected onCanvasMouseDown(event: Ptr) {
     if ((event.button ?? 0) !== 0) return;
+    if (this.mode() === 'plant') { if (this.plantPointDown(event)) return; }
     this.panMoved = false;
     this.isPanning.set(true);
     this.panningStart = { clientX: event.clientX, clientY: event.clientY, panX: this.panX(), panY: this.panY() };
   }
 
   protected onCanvasMove(event: Ptr) {
+    if (this.mode() === 'plant' && this.plantSel()) { this.plantPointMove(event); return; }
     // Rotation
     const rotating = this.rotatingBed();
     if (rotating) {
@@ -256,6 +264,7 @@ export class GardenLayoutComponent implements OnInit {
   }
 
   protected onCanvasMouseUp(event: Ptr) {
+    if (this.mode() === 'plant' && this.plantSel()) { this.plantPointUp(); return; }
     // Rotation end
     const rotating = this.rotatingBed();
     if (rotating) {
@@ -337,6 +346,7 @@ export class GardenLayoutComponent implements OnInit {
   }
 
   protected onBedMouseDown(bed: GardenBed, event: MouseEvent) {
+    if (this.mode() === 'plant') return;
     event.stopPropagation();
     this.startBedDrag(bed, event);
   }
@@ -356,6 +366,7 @@ export class GardenLayoutComponent implements OnInit {
   }
 
   protected onObstacleMouseDown(obstacle: Obstacle, event: MouseEvent) {
+    if (this.mode() === 'plant') return;
     event.stopPropagation();
     this.selectObstacleCore(obstacle);
   }
@@ -369,6 +380,7 @@ export class GardenLayoutComponent implements OnInit {
   }
 
   protected onRotateHandleMouseDown(bed: GardenBed, event: MouseEvent) {
+    if (this.mode() === 'plant') return;
     event.stopPropagation();
     this.startRotate(bed, event);
   }
@@ -395,6 +407,9 @@ export class GardenLayoutComponent implements OnInit {
     this.rotationBedStart.set(0);
     this.isPanning.set(false);
     this.panningStart = null;
+    this.plantDrawBedId = null;
+    this.plantAnchorCell = null;
+    this.plantSel.set(null);
   }
 
   protected selectObstacle(obstacle: Obstacle) {
@@ -572,6 +587,12 @@ export class GardenLayoutComponent implements OnInit {
   protected onCanvasTouchStart(event: TouchEvent) {
     if (event.touches.length === 2) {
       this.beginPinch(event);
+      event.preventDefault();
+      return;
+    }
+    if (this.mode() === 'plant') {
+      const t = event.touches[0];
+      this.onCanvasMouseDown({ clientX: t.clientX, clientY: t.clientY, target: t.target, button: 0 });
       event.preventDefault();
       return;
     }
@@ -959,6 +980,77 @@ export class GardenLayoutComponent implements OnInit {
     if (!ctm) return null;
     const svgPt = pt.matrixTransform(ctm.inverse());
     return { x: svgPt.x, y: svgPt.y };
+  }
+
+  private bedById(id: string | null): GardenBed | undefined {
+    return id ? this.garden()?.beds.find((b) => b.id === id) : undefined;
+  }
+
+  /** Returns true if a draw started on a bed (caller then suppresses panning). */
+  private plantPointDown(p: Ptr): boolean {
+    if (!this.selectedPlant()) return false;
+    const pt = this.svgPoint(p);
+    if (!pt) return false;
+    for (const bed of this.garden()?.beds ?? []) {
+      const cell = bedCellAtPoint(pt, bed);
+      if (cell) {
+        this.plantDrawBedId = bed.id;
+        this.plantAnchorCell = { col: cell.col, row: cell.row };
+        this.plantSel.set({ bedId: bed.id, minCol: cell.col, minRow: cell.row, maxCol: cell.col, maxRow: cell.row });
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private plantPointMove(p: Ptr) {
+    const sel = this.plantSel();
+    const bed = this.bedById(this.plantDrawBedId);
+    const anchor = this.plantAnchorCell;
+    if (!sel || !bed || !anchor) return;
+    const pt = this.svgPoint(p);
+    if (!pt) return;
+    const { cols, rows } = bedColsRows(bed);
+    const cell = bedCellAtPoint(pt, bed) ?? this.nearestCell(pt, bed, cols, rows);
+    this.plantSel.set({
+      bedId: bed.id,
+      minCol: Math.min(anchor.col, cell.col), minRow: Math.min(anchor.row, cell.row),
+      maxCol: Math.max(anchor.col, cell.col), maxRow: Math.max(anchor.row, cell.row),
+    });
+  }
+
+  private nearestCell(pt: { x: number; y: number }, bed: GardenBed, cols: number, rows: number): { col: number; row: number } {
+    const cx = bed.xM + bed.widthM / 2, cy = bed.yM + bed.lengthM / 2;
+    const a = ((bed.rotationDeg ?? 0) * Math.PI) / 180;
+    const dx = pt.x - cx, dy = pt.y - cy;
+    const lx = cx + dx * Math.cos(a) + dy * Math.sin(a);
+    const ly = cy - dx * Math.sin(a) + dy * Math.cos(a);
+    const col = Math.max(0, Math.min(cols - 1, Math.floor(((lx - bed.xM) * 100) / 5)));
+    const row = Math.max(0, Math.min(rows - 1, Math.floor(((ly - bed.yM) * 100) / 5)));
+    return { col, row };
+  }
+
+  private plantPointUp() {
+    const sel = this.plantSel();
+    const bed = this.bedById(this.plantDrawBedId);
+    const g = this.garden();
+    const plant = this.selectedPlant();
+    this.plantDrawBedId = null;
+    this.plantAnchorCell = null;
+    this.plantSel.set(null);
+    if (!sel || !bed || !g || !plant) return;
+    const { cols, rows } = bedColsRows(bed);
+    const zoneInputs = [{
+      minCol: sel.minCol, minRow: sel.minRow, maxCol: sel.maxCol, maxRow: sel.maxRow,
+      spacingFactor: this.plantSpacingFactor(),
+      spacingCm: plant.spacingCm, rowSpacingCm: plant.rowSpacingCm ?? plant.spacingCm,
+    }];
+    const plantCount = computeBedZoneViews(zoneInputs, cols, rows)[0].spots.length;
+    const year = new Date().getFullYear();
+    this.api.addPlantingZone(g.id, bed.id, year, {
+      plantId: plant.id, minCol: sel.minCol, minRow: sel.minRow, maxCol: sel.maxCol, maxRow: sel.maxRow,
+      spacingFactor: this.plantSpacingFactor(), plantCount,
+    }).subscribe(() => this.loadGarden(g.id));
   }
 
   private snap(val: number): number {

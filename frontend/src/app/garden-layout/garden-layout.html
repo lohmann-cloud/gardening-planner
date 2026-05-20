@@ -171,6 +171,7 @@
         class="canvas-container relative flex-1 overflow-hidden touch-none"
         [class.is-panning]="isPanning()"
         [class.placement-mode]="tool() !== 'select'"
+        [class.plant-mode]="mode() === 'plant'"
         (wheel)="onWheel($event)"
         (touchstart)="onCanvasTouchStart($event)"
         (touchmove)="onCanvasTouchMove($event)"
@@ -275,6 +276,14 @@
                     <circle [attr.cx]="s.x" [attr.cy]="s.y" r="0.06"
                             [attr.fill]="s.color" stroke="#ffffff" stroke-width="0.012"
                             pointer-events="none" opacity="0.9" />
+                  }
+                  @if (plantSel(); as ps) {
+                    @if (ps.bedId === b.id) {
+                      <rect
+                        [attr.x]="b.xM + ps.minCol * 0.05" [attr.y]="b.yM + ps.minRow * 0.05"
+                        [attr.width]="(ps.maxCol - ps.minCol + 1) * 0.05" [attr.height]="(ps.maxRow - ps.minRow + 1) * 0.05"
+                        fill="rgba(207,102,41,0.25)" stroke="#cf6629" stroke-width="0.02" pointer-events="none" />
+                    }
                   }
                 }
                 @if (tool() === 'select' && selectedBed()?.id === b.id) {
