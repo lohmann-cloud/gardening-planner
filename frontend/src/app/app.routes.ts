@@ -2,7 +2,6 @@ import { Route } from '@angular/router';
 import { DashboardComponent } from './dashboard/dashboard';
 import { GardenCreateComponent } from './garden-create/garden-create';
 import { GardenLayoutComponent } from './garden-layout/garden-layout';
-import { BedPlannerComponent } from './bed-planner/bed-planner';
 import { PlantsComponent } from './plants/plants';
 import { InventoryComponent } from './inventory/inventory';
 import { LoginComponent } from './login/login';
@@ -13,7 +12,6 @@ export const routes: Route[] = [
   { path: '', component: DashboardComponent, canActivate: [authGuard] },
   { path: 'gardens/new', component: GardenCreateComponent, canActivate: [authGuard] },
   { path: 'gardens/:id', component: GardenLayoutComponent, canActivate: [authGuard] },
-  { path: 'gardens/:id/beds/:bedId', component: BedPlannerComponent, canActivate: [authGuard] },
   { path: 'plants', component: PlantsComponent, canActivate: [authGuard] },
   { path: 'inventory', component: InventoryComponent, canActivate: [authGuard] },
 ];

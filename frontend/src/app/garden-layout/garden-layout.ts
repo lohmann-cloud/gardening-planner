@@ -536,10 +536,8 @@ export class GardenLayoutComponent implements OnInit {
   }
 
   protected openBedPlanner() {
-    const bed = this.selectedBed();
-    const g = this.garden();
-    if (!bed || !g) return;
-    this.router.navigate(['/gardens', g.id, 'beds', bed.id]);
+    this.mode.set('plant');
+    this.toolbarOpen.set(false);
   }
 
   protected deleteBed(bed: GardenBed) {
