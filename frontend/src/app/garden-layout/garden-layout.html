@@ -115,10 +115,14 @@
       </aside>
 
       <div
-        class="canvas-container relative flex-1 overflow-hidden"
+        class="canvas-container relative flex-1 overflow-hidden touch-none"
         [class.is-panning]="isPanning()"
         [class.placement-mode]="tool() !== 'select'"
         (wheel)="onWheel($event)"
+        (touchstart)="onCanvasTouchStart($event)"
+        (touchmove)="onCanvasTouchMove($event)"
+        (touchend)="onCanvasTouchEnd($event)"
+        (touchcancel)="onCanvasTouchEnd($event)"
       >
         <div class="zoom-controls absolute top-4 right-4 z-10 inline-flex gap-1 bg-white/95 backdrop-blur border border-cream-200 rounded-xl p-1 shadow-md">
           <button class="zoom-btn" type="button" (click)="zoomOut()" title="Auszoomen">−</button>
@@ -153,6 +157,7 @@
             @for (o of g.obstacles; track o.id) {
               <g
                 class="clickable"
+                [attr.data-obstacle-id]="o.id"
                 (mousedown)="onObstacleMouseDown(o, $event)"
               >
                 <rect
@@ -182,6 +187,7 @@
               <g
                 (mousedown)="onBedMouseDown(b, $event)"
                 class="clickable"
+                [attr.data-bed-id]="b.id"
                 [class.dragging]="isDragging"
                 [attr.transform]="'rotate(' + rot + ',' + cx + ',' + cy + ')'"
               >
@@ -221,6 +227,7 @@
                     [attr.cx]="cx" [attr.cy]="by - 0.4" r="0.15"
                     fill="#fff" stroke="#466838" stroke-width="0.04"
                     class="rotate-handle"
+                    data-rotate-handle="1"
                     (mousedown)="onRotateHandleMouseDown(b, $event)"
                   />
                 }

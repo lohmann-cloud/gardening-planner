@@ -255,7 +255,7 @@
 
       <div
         #gridContainer
-        class="grid-container relative flex-1 overflow-hidden"
+        class="grid-container relative flex-1 overflow-hidden touch-none"
         [class.is-panning]="isPanning()"
         [class.has-plant]="!!selectedPlant()"
         (mousedown)="onContainerMouseDown($event)"
@@ -263,6 +263,10 @@
         (mouseup)="onContainerMouseUp()"
         (mouseleave)="onContainerMouseLeave()"
         (wheel)="onWheel($event)"
+        (touchstart)="onTouchStart($event)"
+        (touchmove)="onTouchMove($event)"
+        (touchend)="onTouchEnd($event)"
+        (touchcancel)="onTouchEnd($event)"
       >
         <div class="zoom-controls absolute top-4 right-4 z-10 inline-flex gap-1 bg-white/95 backdrop-blur border border-cream-200 rounded-xl p-1 shadow-md">
           <button class="zoom-btn" type="button" (click)="zoomOut()" title="Auszoomen">−</button>
@@ -285,6 +289,8 @@
                   @if (zoneCellMap().get(col + ',' + row); as zv) {
                     <div
                       class="cell zone-cell"
+                      [attr.data-col]="col"
+                      [attr.data-row]="row"
                       [class.plant-spot]="plantSpotMap().has(col + ',' + row)"
                       [style.background]="plantSpotMap().has(col + ',' + row) ? zv.color : zv.colorLight"
                       [style.box-shadow]="'inset 0 0 0 1px ' + zv.color"
@@ -306,6 +312,8 @@
                   } @else {
                     <div
                       class="cell"
+                      [attr.data-col]="col"
+                      [attr.data-row]="row"
                       [class.in-selection]="isInSelection(col, row)"
                       [class.preview-spot]="previewSpotSet().has(col + ',' + row)"
                       [title]="col * cellSize() + 'cm, ' + row * cellSize() + 'cm'"

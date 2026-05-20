@@ -229,6 +229,101 @@ export class BedPlannerComponent implements OnInit {
     this.panningStart = null;
   }
 
+  // ─── Touch: pinch-zoom, one-finger pan, one-finger area drawing ──────────
+  private touchMode: 'none' | 'pan' | 'draw' | 'pinch' = 'none';
+  private panStartTouch: { x: number; y: number; panX: number; panY: number } | null = null;
+  private pinchStart: { dist: number; midX: number; midY: number; zoom: number; panX: number; panY: number } | null = null;
+
+  protected onTouchStart(event: TouchEvent) {
+    if (event.touches.length === 2) {
+      this.beginPinch(event);
+      event.preventDefault();
+      return;
+    }
+    if (event.touches.length !== 1) return;
+    const t = event.touches[0];
+    const cell = (t.target as Element)?.closest?.('.cell') as HTMLElement | null;
+    if (this.selectedPlant() && cell && cell.dataset['col'] != null && !cell.classList.contains('zone-cell')) {
+      this.touchMode = 'draw';
+      this.dragging.set(true);
+      const col = +cell.dataset['col']!;
+      const row = +cell.dataset['row']!;
+      this.selection.set({ startCol: col, startRow: row, endCol: col, endRow: row });
+    } else {
+      this.touchMode = 'pan';
+      this.panStartTouch = { x: t.clientX, y: t.clientY, panX: this.panX(), panY: this.panY() };
+    }
+    event.preventDefault();
+  }
+
+  protected onTouchMove(event: TouchEvent) {
+    if (this.touchMode === 'pinch' && event.touches.length === 2) {
+      this.updatePinch(event);
+      event.preventDefault();
+      return;
+    }
+    if (this.touchMode === 'pan' && this.panStartTouch && event.touches.length === 1) {
+      const t = event.touches[0];
+      this.panX.set(this.panStartTouch.panX + (t.clientX - this.panStartTouch.x));
+      this.panY.set(this.panStartTouch.panY + (t.clientY - this.panStartTouch.y));
+      event.preventDefault();
+      return;
+    }
+    if (this.touchMode === 'draw' && event.touches.length === 1) {
+      const t = event.touches[0];
+      const el = document.elementFromPoint(t.clientX, t.clientY) as HTMLElement | null;
+      const cell = el?.closest?.('.cell') as HTMLElement | null;
+      const sel = this.selection();
+      if (cell && cell.dataset['col'] != null && sel) {
+        this.selection.set({ ...sel, endCol: +cell.dataset['col']!, endRow: +cell.dataset['row']! });
+      }
+      event.preventDefault();
+    }
+  }
+
+  protected onTouchEnd(event: TouchEvent) {
+    if (event.touches.length === 0) {
+      if (this.touchMode === 'draw') this.dragging.set(false);
+      this.touchMode = 'none';
+      this.panStartTouch = null;
+      this.pinchStart = null;
+    } else if (event.touches.length === 1 && this.touchMode === 'pinch') {
+      const t = event.touches[0];
+      this.touchMode = 'pan';
+      this.pinchStart = null;
+      this.panStartTouch = { x: t.clientX, y: t.clientY, panX: this.panX(), panY: this.panY() };
+    }
+  }
+
+  private beginPinch(event: TouchEvent) {
+    const [a, b] = [event.touches[0], event.touches[1]];
+    const r = this.containerRef.nativeElement.getBoundingClientRect();
+    this.touchMode = 'pinch';
+    this.dragging.set(false);
+    this.pinchStart = {
+      dist: Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY),
+      midX: (a.clientX + b.clientX) / 2 - r.left,
+      midY: (a.clientY + b.clientY) / 2 - r.top,
+      zoom: this.zoom(), panX: this.panX(), panY: this.panY(),
+    };
+  }
+
+  private updatePinch(event: TouchEvent) {
+    const ps = this.pinchStart;
+    if (!ps) return;
+    const [a, b] = [event.touches[0], event.touches[1]];
+    const r = this.containerRef.nativeElement.getBoundingClientRect();
+    const dist = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+    const midX = (a.clientX + b.clientX) / 2 - r.left;
+    const midY = (a.clientY + b.clientY) / 2 - r.top;
+    const newZoom = Math.max(0.1, Math.min(10, ps.zoom * (dist / ps.dist)));
+    const worldX = (ps.midX - ps.panX) / ps.zoom;
+    const worldY = (ps.midY - ps.panY) / ps.zoom;
+    this.panX.set(midX - worldX * newZoom);
+    this.panY.set(midY - worldY * newZoom);
+    this.zoom.set(newZoom);
+  }
+
   protected onWheel(event: WheelEvent) {
     event.preventDefault();
     const container = event.currentTarget as HTMLElement;

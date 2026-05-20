@@ -9,6 +9,9 @@ import { plantColor, plantColorLight, plantIcon } from '../plant-utils';
 
 type Tool = 'select' | 'bed' | 'obstacle';
 
+/** Minimal pointer shape shared by MouseEvent and Touch so handlers serve both. */
+type Ptr = { clientX: number; clientY: number; target: EventTarget | null; button?: number };
+
 @Component({
   selector: 'app-garden-layout',
   imports: [FormField, RouterModule, DecimalPipe],
@@ -153,14 +156,14 @@ export class GardenLayoutComponent implements OnInit {
     this.loadGarden(id);
   }
 
-  protected onCanvasMouseDown(event: MouseEvent) {
-    if (event.button !== 0) return;
+  protected onCanvasMouseDown(event: Ptr) {
+    if ((event.button ?? 0) !== 0) return;
     this.panMoved = false;
     this.isPanning.set(true);
     this.panningStart = { clientX: event.clientX, clientY: event.clientY, panX: this.panX(), panY: this.panY() };
   }
 
-  protected onCanvasMove(event: MouseEvent) {
+  protected onCanvasMove(event: Ptr) {
     // Rotation
     const rotating = this.rotatingBed();
     if (rotating) {
@@ -207,6 +210,10 @@ export class GardenLayoutComponent implements OnInit {
     }
 
     // Ghost placement preview
+    this.updateGhost(event);
+  }
+
+  private updateGhost(event: Ptr) {
     if (this.tool() === 'select' || !this.garden()) {
       this.ghost.set(null);
       return;
@@ -223,7 +230,7 @@ export class GardenLayoutComponent implements OnInit {
     this.ghost.set({ x, y, w, h, type: this.tool() });
   }
 
-  protected onCanvasMouseUp(event: MouseEvent) {
+  protected onCanvasMouseUp(event: Ptr) {
     // Rotation end
     const rotating = this.rotatingBed();
     if (rotating) {
@@ -268,7 +275,7 @@ export class GardenLayoutComponent implements OnInit {
     }
   }
 
-  private handleBackgroundClick(event: MouseEvent) {
+  private handleBackgroundClick(event: Ptr) {
     const g = this.garden();
     if (this.tool() === 'select') {
       this.clearSelection();
@@ -306,12 +313,16 @@ export class GardenLayoutComponent implements OnInit {
 
   protected onBedMouseDown(bed: GardenBed, event: MouseEvent) {
     event.stopPropagation();
+    this.startBedDrag(bed, event);
+  }
+
+  private startBedDrag(bed: GardenBed, p: Ptr) {
     if (this.tool() !== 'select') return;
     this.selectedBed.set(bed);
     this.selectedObstacle.set(null);
     this.editingBed.set(false);
     this.toolbarOpen.set(true);
-    const pt = this.svgPoint(event);
+    const pt = this.svgPoint(p);
     if (!pt) return;
     this.draggedBed.set(bed);
     this.dragOffset.set({ dx: pt.x - bed.xM, dy: pt.y - bed.yM });
@@ -321,6 +332,10 @@ export class GardenLayoutComponent implements OnInit {
 
   protected onObstacleMouseDown(obstacle: Obstacle, event: MouseEvent) {
     event.stopPropagation();
+    this.selectObstacleCore(obstacle);
+  }
+
+  private selectObstacleCore(obstacle: Obstacle) {
     if (this.tool() !== 'select') return;
     this.selectedObstacle.set(obstacle);
     this.selectedBed.set(null);
@@ -330,7 +345,11 @@ export class GardenLayoutComponent implements OnInit {
 
   protected onRotateHandleMouseDown(bed: GardenBed, event: MouseEvent) {
     event.stopPropagation();
-    const pt = this.svgPoint(event);
+    this.startRotate(bed, event);
+  }
+
+  private startRotate(bed: GardenBed, p: Ptr) {
+    const pt = this.svgPoint(p);
     if (!pt) return;
     const cx = bed.xM + bed.widthM / 2;
     const cy = bed.yM + bed.lengthM / 2;
@@ -520,6 +539,105 @@ export class GardenLayoutComponent implements OnInit {
     this.zoom.set(newZoom);
   }
 
+  // ─── Touch: pinch-zoom + pan, plus tap/drag routed through the mouse cores ──
+  private pinchStart: { dist: number; midX: number; midY: number; zoom: number; panX: number; panY: number } | null = null;
+
+  protected onCanvasTouchStart(event: TouchEvent) {
+    if (event.touches.length === 2) {
+      this.beginPinch(event);
+      event.preventDefault();
+      return;
+    }
+    if (event.touches.length !== 1) return;
+    const t = event.touches[0];
+    const el = t.target as Element | null;
+    const handle = el?.closest?.('[data-rotate-handle]');
+    const bedG = el?.closest?.('[data-bed-id]');
+    const obsG = el?.closest?.('[data-obstacle-id]');
+    const ptr: Ptr = { clientX: t.clientX, clientY: t.clientY, target: t.target, button: 0 };
+    if (handle && this.selectedBed()) {
+      this.startRotate(this.selectedBed()!, ptr);
+    } else if (bedG && this.tool() === 'select') {
+      const bed = this.garden()?.beds.find((b) => b.id === bedG.getAttribute('data-bed-id'));
+      if (bed) this.startBedDrag(bed, ptr);
+    } else if (obsG && this.tool() === 'select') {
+      const obs = this.garden()?.obstacles.find((o) => o.id === obsG.getAttribute('data-obstacle-id'));
+      if (obs) this.selectObstacleCore(obs);
+    } else if (this.tool() === 'select') {
+      this.onCanvasMouseDown(ptr);
+    } else {
+      this.updateGhost(ptr);
+    }
+    event.preventDefault();
+  }
+
+  protected onCanvasTouchMove(event: TouchEvent) {
+    if (this.pinchStart && event.touches.length === 2) {
+      this.updatePinch(event);
+      event.preventDefault();
+      return;
+    }
+    if (event.touches.length !== 1) return;
+    const t = event.touches[0];
+    const ptr: Ptr = { clientX: t.clientX, clientY: t.clientY, target: t.target };
+    if (this.tool() !== 'select' && !this.draggedBed() && !this.rotatingBed() && !this.isPanning()) {
+      this.updateGhost(ptr);
+    } else {
+      this.onCanvasMove(ptr);
+    }
+    event.preventDefault();
+  }
+
+  protected onCanvasTouchEnd(event: TouchEvent) {
+    if (event.touches.length >= 1) {
+      if (event.touches.length === 1) this.pinchStart = null;
+      return;
+    }
+    this.pinchStart = null;
+    const t = event.changedTouches[0];
+    if (!t) { this.cancelDrag(); return; }
+    const ptr: Ptr = { clientX: t.clientX, clientY: t.clientY, target: t.target, button: 0 };
+    if (this.tool() !== 'select' && this.ghost()) {
+      this.handleBackgroundClick(ptr);
+      this.ghost.set(null);
+    } else {
+      this.onCanvasMouseUp(ptr);
+    }
+  }
+
+  private beginPinch(event: TouchEvent) {
+    const [a, b] = [event.touches[0], event.touches[1]];
+    const rect = this.canvasRect();
+    this.cancelDrag();
+    this.pinchStart = {
+      dist: Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY),
+      midX: (a.clientX + b.clientX) / 2 - rect.left,
+      midY: (a.clientY + b.clientY) / 2 - rect.top,
+      zoom: this.zoom(), panX: this.panX(), panY: this.panY(),
+    };
+  }
+
+  private updatePinch(event: TouchEvent) {
+    const ps = this.pinchStart;
+    if (!ps) return;
+    const [a, b] = [event.touches[0], event.touches[1]];
+    const rect = this.canvasRect();
+    const dist = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+    const midX = (a.clientX + b.clientX) / 2 - rect.left;
+    const midY = (a.clientY + b.clientY) / 2 - rect.top;
+    const newZoom = Math.max(0.1, Math.min(30, ps.zoom * (dist / ps.dist)));
+    const worldX = (ps.midX - ps.panX) / ps.zoom;
+    const worldY = (ps.midY - ps.panY) / ps.zoom;
+    this.panX.set(midX - worldX * newZoom);
+    this.panY.set(midY - worldY * newZoom);
+    this.zoom.set(newZoom);
+  }
+
+  private canvasRect(): DOMRect {
+    const container = this.svgRef.nativeElement.closest('.canvas-container') as HTMLElement;
+    return container.getBoundingClientRect();
+  }
+
   protected bedFill(bedId: string): string {
     const plants = this.bedPlants().get(bedId);
     return plants?.length ? plantColorLight(plants[0]) : '#a5d6a7';
@@ -641,7 +759,7 @@ export class GardenLayoutComponent implements OnInit {
     return [min, max];
   }
 
-  private svgPoint(event: MouseEvent): { x: number; y: number } | null {
+  private svgPoint(event: Ptr): { x: number; y: number } | null {
     const svg = (event.target as Element).closest('svg') as SVGSVGElement;
     if (!svg) return null;
     const pt = svg.createSVGPoint();
