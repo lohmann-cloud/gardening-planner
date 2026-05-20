@@ -164,6 +164,20 @@
           } @else {
             <p class="text-xs text-cream-400 italic mt-2">Wähle eine Pflanze, dann ziehe einen Bereich in einem Beet auf.</p>
           }
+          @if (bedZonesList().length) {
+            <div class="border-t border-cream-200 pt-3 mt-3">
+              <h4 class="text-xs uppercase tracking-[0.12em] text-cream-500 font-semibold m-0 mb-2">Bereiche</h4>
+              <div class="space-y-1">
+                @for (z of bedZonesList(); track z.zoneId) {
+                  <div class="flex items-center gap-2 py-1">
+                    <span class="w-3 h-3 rounded flex-shrink-0" [style.background]="z.color"></span>
+                    <span class="flex-1 text-xs text-cream-700 truncate">{{ z.plantName }} <small class="text-cream-400">· {{ z.bedName }} ({{ z.count }})</small></span>
+                    <button class="text-cream-400 hover:text-red-700 text-base leading-none px-1" title="Bereich entfernen" (click)="removeZoneById(z.bedId, z.zoneId)">×</button>
+                  </div>
+                }
+              </div>
+            </div>
+          }
         }
       </aside>
 
@@ -272,6 +286,15 @@
                   >{{ icons }}</text>
                 }
                 @if (mode() === 'plant') {
+                  @if (showCellGrid()) {
+                    @let grid = bedGridLines(b);
+                    @for (gx of grid.xs; track gx) {
+                      <line [attr.x1]="gx" [attr.y1]="b.yM" [attr.x2]="gx" [attr.y2]="b.yM + b.lengthM" stroke="#466838" stroke-width="0.004" opacity="0.25" pointer-events="none" />
+                    }
+                    @for (gy of grid.ys; track gy) {
+                      <line [attr.x1]="b.xM" [attr.y1]="gy" [attr.x2]="b.xM + b.widthM" [attr.y2]="gy" stroke="#466838" stroke-width="0.004" opacity="0.25" pointer-events="none" />
+                    }
+                  }
                   @for (s of bedSpotsFor(b.id); track $index) {
                     <circle [attr.cx]="s.x" [attr.cy]="s.y" r="0.06"
                             [attr.fill]="s.color" stroke="#ffffff" stroke-width="0.012"

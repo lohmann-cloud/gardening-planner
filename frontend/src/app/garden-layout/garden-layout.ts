@@ -56,6 +56,7 @@ export class GardenLayoutComponent implements OnInit {
   protected readonly autoPlantResult = signal<AutoPlantResult | null>(null);
   protected readonly autoPlantError = signal<string | null>(null);
   protected readonly clearBusy = signal(false);
+  protected readonly bedZonesList = signal<{ bedId: string; bedName: string; zoneId: string; plantName: string; color: string; count: number }[]>([]);
 
   // Plant-mode drawing
   private plantDrawBedId: string | null = null;
@@ -115,6 +116,9 @@ export class GardenLayoutComponent implements OnInit {
     for (let y = g.gridResolutionM; y < g.lengthM; y += g.gridResolutionM) lines.push(y);
     return lines;
   });
+
+  private readonly GRID_ZOOM_THRESHOLD = 6;
+  protected readonly showCellGrid = computed(() => this.mode() === 'plant' && this.zoom() >= this.GRID_ZOOM_THRESHOLD);
 
   private readonly bedModel = signal({ name: 'Beet', widthM: 2, lengthM: 1 });
   protected readonly bedForm = form(this.bedModel, (path) => {
@@ -850,6 +854,7 @@ export class GardenLayoutComponent implements OnInit {
       forkJoin(planRequests).subscribe((plans) => {
         const plantsMap = new Map<string, Plant[]>();
         const spotsMap = new Map<string, BedPlantSpot[]>();
+        const legend: { bedId: string; bedName: string; zoneId: string; plantName: string; color: string; count: number }[] = [];
         plans.forEach((plan, i) => {
           const bed = g.beds[i];
           const seen = new Set<string>();
@@ -870,6 +875,9 @@ export class GardenLayoutComponent implements OnInit {
             plant: z.plant,
           }));
           const views = computeBedZoneViews(zoneInputs, cols, rows);
+          views.forEach((v, idx) => {
+            legend.push({ bedId: bed.id, bedName: bed.name, zoneId: plan.zones[idx].id, plantName: v.zone.plant.name, color: plantColor(v.zone.plant), count: v.spots.length });
+          });
           const spots: BedPlantSpot[] = [];
           for (const v of views) {
             for (const s of v.spots) {
@@ -885,6 +893,7 @@ export class GardenLayoutComponent implements OnInit {
         });
         this.bedPlants.set(plantsMap);
         this.bedSpots.set(spotsMap);
+        this.bedZonesList.set(legend);
       });
     });
   }
@@ -1051,6 +1060,21 @@ export class GardenLayoutComponent implements OnInit {
       plantId: plant.id, minCol: sel.minCol, minRow: sel.minRow, maxCol: sel.maxCol, maxRow: sel.maxRow,
       spacingFactor: this.plantSpacingFactor(), plantCount,
     }).subscribe(() => this.loadGarden(g.id));
+  }
+
+  protected bedGridLines(bed: GardenBed): { xs: number[]; ys: number[] } {
+    const { cols, rows } = bedColsRows(bed);
+    const xs: number[] = [];
+    const ys: number[] = [];
+    for (let c = 1; c < cols; c++) xs.push(bed.xM + c * 0.05);
+    for (let r = 1; r < rows; r++) ys.push(bed.yM + r * 0.05);
+    return { xs, ys };
+  }
+
+  protected removeZoneById(bedId: string, zoneId: string) {
+    const g = this.garden();
+    if (!g) return;
+    this.api.removePlantingZone(g.id, bedId, new Date().getFullYear(), zoneId).subscribe(() => this.loadGarden(g.id));
   }
 
   private snap(val: number): number {
