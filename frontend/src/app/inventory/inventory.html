@@ -1,0 +1,121 @@
+<div class="inventory-page max-w-3xl mx-auto px-6 pt-10 pb-16">
+  <div class="flex items-center gap-3 mb-6">
+    <a routerLink="/" class="text-cream-500 hover:text-cream-800 transition-colors text-sm font-medium">
+      ← Übersicht
+    </a>
+  </div>
+
+  <div class="flex items-end justify-between gap-4 mb-6 flex-wrap">
+    <div>
+      <p class="text-xs uppercase tracking-[0.15em] text-cream-500 mb-1">Mein Bestand</p>
+      <h1 class="text-3xl font-bold text-leaf-800 tracking-tight m-0">Pflanzbestand</h1>
+    </div>
+    <button class="btn btn-primary btn-sm" type="button" (click)="toggleAddPanel()">
+      + Pflanze hinzufügen
+    </button>
+  </div>
+
+  @if (addPanelOpen()) {
+    <div class="surface p-4 mb-5 space-y-3">
+      <h3 class="text-sm font-semibold text-cream-700 m-0">Pflanze zum Bestand hinzufügen</h3>
+      <input
+        type="text"
+        placeholder="Pflanze suchen…"
+        [value]="addSearch()"
+        (input)="onAddSearch($event)"
+        class="field-input"
+      />
+      <div class="space-y-1 max-h-64 overflow-y-auto">
+        @for (plant of addablePlants(); track plant.id) {
+          <button
+            type="button"
+            class="w-full text-left flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-cream-50 transition-colors border border-transparent hover:border-cream-200"
+            (click)="addPlant(plant)"
+          >
+            <span class="text-lg w-7 text-center">{{ plant.iconEmoji ?? '🌱' }}</span>
+            <span class="flex-1 text-sm font-medium text-cream-800">{{ plant.name }}</span>
+            <span class="text-xs text-cream-400">hinzufügen +</span>
+          </button>
+        } @empty {
+          @if (addSearch()) {
+            <p class="text-xs text-cream-400 italic px-3 py-2 m-0">Keine passenden Pflanzen gefunden</p>
+          } @else {
+            <p class="text-xs text-cream-400 italic px-3 py-2 m-0">Alle Pflanzen bereits im Bestand</p>
+          }
+        }
+      </div>
+    </div>
+  }
+
+  @if (inventory().length) {
+    <div class="mb-4">
+      <input
+        type="text"
+        placeholder="Bestand durchsuchen…"
+        [value]="search()"
+        (input)="onSearch($event)"
+        class="field-input"
+      />
+    </div>
+  }
+
+  @if (filteredInventory().length) {
+    <div class="space-y-2">
+      @for (item of filteredInventory(); track item.plantId) {
+        <div class="inventory-item surface flex items-center gap-4 px-4 py-3"
+             [style.border-left]="'4px solid ' + colorFor(item)">
+          <span class="text-2xl w-9 text-center flex-shrink-0">{{ iconFor(item) }}</span>
+          <div class="flex-1 min-w-0">
+            <p class="m-0 text-sm font-semibold text-cream-800 truncate">{{ item.plantName }}</p>
+            <p class="m-0 text-xs text-cream-400">
+              @if (item.quantity === 1) {
+                1 Pflanze
+              } @else {
+                {{ item.quantity }} Pflanzen
+              }
+            </p>
+          </div>
+          <div class="flex items-center gap-2 flex-shrink-0">
+            <button
+              class="w-8 h-8 flex items-center justify-center rounded-lg border border-cream-200 bg-white text-cream-600 hover:bg-cream-50 font-bold text-lg leading-none transition-colors"
+              type="button"
+              (click)="decrement(item)"
+              [disabled]="getQuantity(item) <= 0"
+            >−</button>
+            <input
+              type="number"
+              class="w-14 text-center field-input px-1 py-1 text-sm"
+              [value]="getQuantity(item)"
+              (input)="onQuantityInput(item, $event)"
+              (blur)="saveQuantity(item)"
+              (keydown.enter)="saveQuantity(item)"
+              min="0"
+            />
+            <button
+              class="w-8 h-8 flex items-center justify-center rounded-lg border border-cream-200 bg-white text-cream-600 hover:bg-cream-50 font-bold text-lg leading-none transition-colors"
+              type="button"
+              (click)="increment(item)"
+            >+</button>
+          </div>
+          <button
+            class="flex-shrink-0 text-cream-300 hover:text-red-700 transition-colors text-xl leading-none px-1 ml-1"
+            type="button"
+            title="Aus Bestand entfernen"
+            (click)="removeItem(item)"
+          >×</button>
+        </div>
+      }
+    </div>
+  } @else if (!inventory().length) {
+    <div class="surface text-center py-20 px-6">
+      <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-leaf-100 text-leaf-700 text-3xl mb-4 shadow-sm">
+        🪴
+      </div>
+      <h2 class="text-xl font-bold text-cream-800 m-0 mb-2">Noch kein Bestand</h2>
+      <p class="text-cream-500 m-0 mb-6">Füge Pflanzen hinzu, die du pflanzen möchtest.</p>
+      <button class="btn btn-primary" type="button" (click)="toggleAddPanel()">+ Pflanze hinzufügen</button>
+    </div>
+  } @else {
+    <p class="text-sm text-cream-400 italic">Keine Pflanzen gefunden</p>
+  }
+</div>

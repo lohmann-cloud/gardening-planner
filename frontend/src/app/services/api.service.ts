@@ -89,6 +89,16 @@ export interface PlantingPlan {
   zones: PlantingZone[];
 }
 
+export interface InventoryItem {
+  id: string;
+  plantId: string;
+  plantName: string;
+  plantIconEmoji?: string;
+  plantColorHex?: string;
+  plantCategory?: string;
+  quantity: number;
+}
+
 export type GardenRole = 'OWNER' | 'COLLABORATOR' | 'VIEWER';
 
 export interface Membership {
@@ -204,5 +214,18 @@ export class ApiService {
 
   removeMember(gardenId: string, userId: string) {
     return this.http.delete(`${API}/gardens/${gardenId}/memberships/${userId}`);
+  }
+
+  // Inventory
+  getInventory() {
+    return this.http.get<InventoryItem[]>(`${API}/inventory`);
+  }
+
+  upsertInventory(plantId: string, quantity: number) {
+    return this.http.put<InventoryItem>(`${API}/inventory`, { plantId, quantity });
+  }
+
+  removeInventory(plantId: string) {
+    return this.http.delete(`${API}/inventory/${plantId}`);
   }
 }

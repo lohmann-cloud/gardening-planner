@@ -1,7 +1,7 @@
 import { Component, computed, ElementRef, inject, OnInit, signal, ViewChild } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { ActivatedRoute, RouterModule } from '@angular/router';
-import { ApiService, Garden, GardenBed, Plant, PlantingPlan, PlantingZone } from '../services/api.service';
+import { ApiService, Garden, GardenBed, InventoryItem, Plant, PlantingPlan, PlantingZone } from '../services/api.service';
 import { plantColor, plantColorLight, plantIcon } from '../plant-utils';
 
 const CELL_CM = 5;
@@ -46,6 +46,9 @@ export class BedPlannerComponent implements OnInit {
   protected readonly dragging = signal(false);
   protected readonly selection = signal<Selection | null>(null);
   protected readonly spacingFactor = signal(1.0);
+  protected readonly sidebarTab = signal<'plants' | 'inventory'>('plants');
+  protected readonly inventory = signal<InventoryItem[]>([]);
+  private draggedInventoryPlant: Plant | null = null;
 
   // Viewport
   protected readonly zoom = signal(1);
@@ -169,6 +172,15 @@ export class BedPlannerComponent implements OnInit {
     return { total };
   });
 
+  protected readonly inventoryPlants = computed(() => {
+    const inv = this.inventory();
+    const allPlants = this.plants();
+    return inv
+      .filter(i => i.quantity > 0)
+      .map(i => ({ item: i, plant: allPlants.find(p => p.id === i.plantId) }))
+      .filter((x): x is { item: InventoryItem; plant: Plant } => !!x.plant);
+  });
+
   ngOnInit() {
     const gardenId = this.route.snapshot.paramMap.get('id')!;
     const bedId = this.route.snapshot.paramMap.get('bedId')!;
@@ -178,6 +190,7 @@ export class BedPlannerComponent implements OnInit {
       setTimeout(() => this.fitToContainer(), 0);
     });
     this.api.getPlants().subscribe((p) => this.plants.set(p));
+    this.api.getInventory().subscribe(inv => this.inventory.set(inv));
     this.loadPlan(gardenId, bedId);
   }
 
@@ -324,6 +337,49 @@ export class BedPlannerComponent implements OnInit {
     if (!g || !b) return;
     this.api.removePlantingZone(g.id, b.id, this.year(), zoneView.zone.id)
       .subscribe(() => this.loadPlan(g.id, b.id));
+  }
+
+  protected setSidebarTab(tab: 'plants' | 'inventory') {
+    this.sidebarTab.set(tab);
+  }
+
+  protected onInventoryDragStart(plant: Plant, event: DragEvent) {
+    this.draggedInventoryPlant = plant;
+    event.dataTransfer?.setData('text/plain', plant.id);
+    this.selectedPlant.set(plant);
+    this.selection.set(null);
+    if (this.spacingFactor() !== 1.0) this.spacingFactor.set(1.0);
+  }
+
+  protected onInventoryDragEnd() {
+    this.draggedInventoryPlant = null;
+  }
+
+  protected onCellDragOver(event: DragEvent) {
+    event.preventDefault();
+    if (event.dataTransfer) event.dataTransfer.dropEffect = 'copy';
+  }
+
+  protected onCellDrop(col: number, row: number, event: DragEvent) {
+    event.preventDefault();
+    const plant = this.draggedInventoryPlant ?? this.selectedPlant();
+    if (!plant) return;
+    if (this.zoneCellMap().has(`${col},${row}`)) return;
+    const g = this.garden();
+    const b = this.bed();
+    if (!g || !b) return;
+    this.selectedPlant.set(plant);
+    this.api.addPlantingZone(g.id, b.id, this.year(), {
+      plantId: plant.id,
+      minCol: col,
+      minRow: row,
+      maxCol: col,
+      maxRow: row,
+      spacingFactor: this.spacingFactor(),
+    }).subscribe(() => {
+      this.draggedInventoryPlant = null;
+      this.loadPlan(g.id, b.id);
+    });
   }
 
   protected onSearchInput(event: Event) {

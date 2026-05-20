@@ -21,46 +21,114 @@
 
     <div class="planner-body flex flex-1 overflow-hidden">
       <aside class="palette w-80 flex-shrink-0 bg-white/85 border-r border-cream-200 overflow-y-auto p-4 flex flex-col gap-3">
-        <h3 class="text-xs uppercase tracking-[0.12em] text-cream-500 font-semibold m-0">Pflanzen</h3>
-
-        <input
-          type="text"
-          placeholder="Suche…"
-          [value]="plantSearch()"
-          (input)="onSearchInput($event)"
-          class="field-input"
-        />
-
-        <div class="plant-list flex-1 min-h-[120px] overflow-y-auto -mx-1 px-1 space-y-1">
-          @for (plant of filteredPlants(); track plant.id) {
-            <button
-              type="button"
-              class="plant-item w-full text-left px-3 py-2 rounded-lg border transition-colors"
-              [class.bg-leaf-50]="selectedPlant()?.id === plant.id"
-              [class.border-leaf-300]="selectedPlant()?.id === plant.id"
-              [class.text-leaf-800]="selectedPlant()?.id === plant.id"
-              [class.bg-white]="selectedPlant()?.id !== plant.id"
-              [class.border-transparent]="selectedPlant()?.id !== plant.id"
-              [class.hover:bg-cream-50]="selectedPlant()?.id !== plant.id"
-              (click)="selectPlant(plant)"
-            >
-              <div class="flex items-center gap-2">
-                @if (plant.iconEmoji) {
-                  <span class="text-base">{{ plant.iconEmoji }}</span>
-                }
-                <span class="font-semibold text-sm">{{ plant.name }}</span>
-              </div>
-              <div class="text-xs text-cream-500 mt-0.5">
-                {{ plant.spacingCm }}cm
-                @if (plant.nutrientDemand) {
-                  · {{ demandLabel(plant.nutrientDemand) }}
-                }
-              </div>
-            </button>
-          } @empty {
-            <p class="text-xs text-cream-400 italic m-0 px-1 py-2">Keine Pflanzen gefunden</p>
-          }
+        <!-- Tab switcher -->
+        <div class="flex rounded-lg bg-cream-100 p-0.5 gap-0.5">
+          <button
+            type="button"
+            class="flex-1 text-xs font-semibold py-1.5 px-2 rounded-md transition-colors"
+            [class.bg-white]="sidebarTab() === 'plants'"
+            [class.shadow-sm]="sidebarTab() === 'plants'"
+            [class.text-cream-800]="sidebarTab() === 'plants'"
+            [class.text-cream-500]="sidebarTab() !== 'plants'"
+            (click)="setSidebarTab('plants')"
+          >Pflanzen</button>
+          <button
+            type="button"
+            class="flex-1 text-xs font-semibold py-1.5 px-2 rounded-md transition-colors"
+            [class.bg-white]="sidebarTab() === 'inventory'"
+            [class.shadow-sm]="sidebarTab() === 'inventory'"
+            [class.text-cream-800]="sidebarTab() === 'inventory'"
+            [class.text-cream-500]="sidebarTab() !== 'inventory'"
+            (click)="setSidebarTab('inventory')"
+          >
+            Bestand
+            @if (inventoryPlants().length) {
+              <span class="ml-1 inline-flex items-center justify-center w-4 h-4 rounded-full bg-leaf-500 text-white text-[9px] font-bold">
+                {{ inventoryPlants().length }}
+              </span>
+            }
+          </button>
         </div>
+
+        @if (sidebarTab() === 'plants') {
+          <input
+            type="text"
+            placeholder="Suche…"
+            [value]="plantSearch()"
+            (input)="onSearchInput($event)"
+            class="field-input"
+          />
+
+          <div class="plant-list flex-1 min-h-[120px] overflow-y-auto -mx-1 px-1 space-y-1">
+            @for (plant of filteredPlants(); track plant.id) {
+              <button
+                type="button"
+                class="plant-item w-full text-left px-3 py-2 rounded-lg border transition-colors"
+                [class.bg-leaf-50]="selectedPlant()?.id === plant.id"
+                [class.border-leaf-300]="selectedPlant()?.id === plant.id"
+                [class.text-leaf-800]="selectedPlant()?.id === plant.id"
+                [class.bg-white]="selectedPlant()?.id !== plant.id"
+                [class.border-transparent]="selectedPlant()?.id !== plant.id"
+                [class.hover:bg-cream-50]="selectedPlant()?.id !== plant.id"
+                (click)="selectPlant(plant)"
+              >
+                <div class="flex items-center gap-2">
+                  @if (plant.iconEmoji) {
+                    <span class="text-base">{{ plant.iconEmoji }}</span>
+                  }
+                  <span class="font-semibold text-sm">{{ plant.name }}</span>
+                </div>
+                <div class="text-xs text-cream-500 mt-0.5">
+                  {{ plant.spacingCm }}cm
+                  @if (plant.nutrientDemand) {
+                    · {{ demandLabel(plant.nutrientDemand) }}
+                  }
+                </div>
+              </button>
+            } @empty {
+              <p class="text-xs text-cream-400 italic m-0 px-1 py-2">Keine Pflanzen gefunden</p>
+            }
+          </div>
+        }
+
+        @if (sidebarTab() === 'inventory') {
+          @if (inventoryPlants().length) {
+            <p class="text-xs text-cream-500 m-0">
+              Ziehe eine Pflanze direkt ins Beet oder klicke, um sie auszuwählen.
+            </p>
+            <div class="flex-1 min-h-[120px] overflow-y-auto -mx-1 px-1 space-y-1">
+              @for (entry of inventoryPlants(); track entry.item.plantId) {
+                <div
+                  class="inventory-drag-item w-full flex items-center gap-2 px-3 py-2 rounded-lg border cursor-grab transition-colors"
+                  [class.bg-leaf-50]="selectedPlant()?.id === entry.item.plantId"
+                  [class.border-leaf-300]="selectedPlant()?.id === entry.item.plantId"
+                  [class.bg-white]="selectedPlant()?.id !== entry.item.plantId"
+                  [class.border-transparent]="selectedPlant()?.id !== entry.item.plantId"
+                  draggable="true"
+                  (dragstart)="onInventoryDragStart(entry.plant, $event)"
+                  (dragend)="onInventoryDragEnd()"
+                  (click)="selectPlant(entry.plant)"
+                >
+                  <span class="text-base w-6 text-center flex-shrink-0">{{ entry.item.plantIconEmoji ?? '🌱' }}</span>
+                  <span class="flex-1 font-semibold text-sm text-cream-800 truncate">{{ entry.plant.name }}</span>
+                  <span
+                    class="flex-shrink-0 inline-flex items-center justify-center min-w-[1.25rem] h-5 rounded-full px-1.5 text-xs font-bold text-white"
+                    [style.background]="plantColor(entry.plant)"
+                  >{{ entry.item.quantity }}</span>
+                </div>
+              }
+            </div>
+            <a routerLink="/inventory" class="text-xs text-leaf-700 hover:text-leaf-900 font-medium text-center">
+              Bestand verwalten →
+            </a>
+          } @else {
+            <div class="text-center py-8 space-y-3">
+              <p class="text-2xl">🪴</p>
+              <p class="text-xs text-cream-400 m-0">Noch kein Bestand vorhanden.</p>
+              <a routerLink="/inventory" class="btn btn-secondary btn-sm">Bestand anlegen</a>
+            </div>
+          }
+        }
 
         @if (selectedPlant(); as sp) {
           <div class="plant-info border-t border-cream-200 pt-3 space-y-2.5">
@@ -212,6 +280,8 @@
                       [title]="zv.zone.plant.name + (plantSpotMap().has(col + ',' + row) ? ' (Pflanzstelle)' : ' (Bereich)')"
                       (mousedown)="onCellMouseDown(col, row, $event)"
                       (mouseenter)="onCellMouseEnter(col, row)"
+                      (dragover)="onCellDragOver($event)"
+                      (drop)="onCellDrop(col, row, $event)"
                     >
                       @if (plantSpotMap().has(col + ',' + row)) {
                         <span class="spot-marker">{{ zv.icon }}</span>
@@ -230,6 +300,8 @@
                       [title]="col * cellSize() + 'cm, ' + row * cellSize() + 'cm'"
                       (mousedown)="onCellMouseDown(col, row, $event)"
                       (mouseenter)="onCellMouseEnter(col, row)"
+                      (dragover)="onCellDragOver($event)"
+                      (drop)="onCellDrop(col, row, $event)"
                     >
                       @if (previewSpotSet().has(col + ',' + row)) {
                         <span class="spot-marker preview">{{ selectedPlant() ? plantIcon(selectedPlant()!) : '' }}</span>

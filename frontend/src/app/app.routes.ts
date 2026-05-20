@@ -4,6 +4,7 @@ import { GardenCreateComponent } from './garden-create/garden-create';
 import { GardenLayoutComponent } from './garden-layout/garden-layout';
 import { BedPlannerComponent } from './bed-planner/bed-planner';
 import { PlantsComponent } from './plants/plants';
+import { InventoryComponent } from './inventory/inventory';
 import { LoginComponent } from './login/login';
 import { authGuard } from './services/auth.guard';
 
@@ -14,4 +15,5 @@ export const routes: Route[] = [
   { path: 'gardens/:id', component: GardenLayoutComponent, canActivate: [authGuard] },
   { path: 'gardens/:id/beds/:bedId', component: BedPlannerComponent, canActivate: [authGuard] },
   { path: 'plants', component: PlantsComponent, canActivate: [authGuard] },
+  { path: 'inventory', component: InventoryComponent, canActivate: [authGuard] },
 ];
