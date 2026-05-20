@@ -97,6 +97,7 @@ export interface InventoryItem {
   plantColorHex?: string;
   plantCategory?: string;
   quantity: number;
+  toBuy: number;
 }
 
 export type GardenRole = 'OWNER' | 'COLLABORATOR' | 'VIEWER';
@@ -195,7 +196,7 @@ export class ApiService {
     return this.http.delete(`${API}/gardens/${gardenId}/beds/${bedId}/plantings/${year}/cells/${cellId}`);
   }
 
-  addPlantingZone(gardenId: string, bedId: string, year: number, data: { plantId: string; minCol: number; minRow: number; maxCol: number; maxRow: number; spacingFactor: number }) {
+  addPlantingZone(gardenId: string, bedId: string, year: number, data: { plantId: string; minCol: number; minRow: number; maxCol: number; maxRow: number; spacingFactor: number; plantCount: number }) {
     return this.http.post<PlantingZone>(`${API}/gardens/${gardenId}/beds/${bedId}/plantings/${year}/zones`, data);
   }
 

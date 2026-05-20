@@ -12,5 +12,6 @@
     <include file="db/changesets/V5__add_users_and_memberships.sql"/>
     <include file="db/changesets/V6__add_plant_icon_color.sql"/>
     <include file="db/changesets/V7__add_inventory.sql"/>
+    <include file="db/changesets/V8__add_inventory_shopping.sql"/>
 
 </databaseChangeLog>

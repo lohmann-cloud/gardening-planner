@@ -50,6 +50,9 @@ public class PlantingResource {
         requireBed(gardenId, bedId);
         PlantingPlan plan = PlantingPlan.findByBedAndYear(bedId, year);
         if (plan == null) throw new NotFoundException("Planting plan not found");
+        for (PlantingZone zone : plan.zones) {
+            InventoryItem.restore(zone.inventoryUserId, zone.plant, zone.stockConsumed, zone.toBuyConsumed);
+        }
         plan.delete();
         return Response.noContent().build();
     }
@@ -100,7 +103,7 @@ public class PlantingResource {
             @PathParam("bedId") UUID bedId,
             @PathParam("year") int year,
             @Valid PlantingZoneRequest req) {
-        access.requireEditor(gardenId);
+        User user = access.requireEditor(gardenId).user;
         GardenBed bed = requireBed(gardenId, bedId);
         PlantingPlan plan = getOrCreatePlan(bed, year);
         Plant plant = Plant.findById(req.plantId);
@@ -113,6 +116,10 @@ public class PlantingResource {
         zone.maxCol = req.maxCol;
         zone.maxRow = req.maxRow;
         zone.spacingFactor = req.spacingFactor;
+        int[] consumed = InventoryItem.consume(user, plant, req.plantCount);
+        zone.stockConsumed = consumed[0];
+        zone.toBuyConsumed = consumed[1];
+        zone.inventoryUserId = user.id;
         zone.persist();
         return Response.status(Response.Status.CREATED).entity(zone).build();
     }
@@ -129,6 +136,7 @@ public class PlantingResource {
         requireBed(gardenId, bedId);
         PlantingZone zone = PlantingZone.findById(zoneId);
         if (zone == null) throw new NotFoundException("Zone not found");
+        InventoryItem.restore(zone.inventoryUserId, zone.plant, zone.stockConsumed, zone.toBuyConsumed);
         zone.delete();
         return Response.noContent().build();
     }

@@ -11,4 +11,7 @@ public class PlantingZoneRequest {
     public int maxCol;
     public int maxRow;
     public double spacingFactor = 1.0;
+
+    /** Number of plants actually placed in this zone (drives inventory accounting). */
+    public int plantCount = 0;
 }

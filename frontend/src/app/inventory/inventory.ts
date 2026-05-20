@@ -19,10 +19,17 @@ export class InventoryComponent implements OnInit {
   protected readonly addSearch = signal('');
   protected readonly addPanelOpen = signal(false);
 
-  protected readonly filteredInventory = computed(() => {
+  protected readonly stockItems = computed(() => {
     const q = this.search().toLowerCase();
     return this.inventory().filter(i =>
-      !q || i.plantName.toLowerCase().includes(q)
+      i.quantity > 0 && (!q || i.plantName.toLowerCase().includes(q))
+    );
+  });
+
+  protected readonly shoppingItems = computed(() => {
+    const q = this.search().toLowerCase();
+    return this.inventory().filter(i =>
+      i.toBuy > 0 && (!q || i.plantName.toLowerCase().includes(q))
     );
   });
 
@@ -81,10 +88,17 @@ export class InventoryComponent implements OnInit {
   }
 
   protected removeItem(item: InventoryItem) {
-    this.api.removeInventory(item.plantId).subscribe(() => {
-      this.inventory.update(inv => inv.filter(i => i.plantId !== item.plantId));
-      this.editingQuantities.update(eq => { const c = { ...eq }; delete c[item.plantId]; return c; });
-    });
+    this.editingQuantities.update(eq => { const c = { ...eq }; delete c[item.plantId]; return c; });
+    if (item.toBuy > 0) {
+      // Still on the shopping list — only clear the on-hand stock, keep the row.
+      this.api.upsertInventory(item.plantId, 0).subscribe(updated => {
+        this.inventory.update(inv => inv.map(i => i.plantId === updated.plantId ? updated : i));
+      });
+    } else {
+      this.api.removeInventory(item.plantId).subscribe(() => {
+        this.inventory.update(inv => inv.filter(i => i.plantId !== item.plantId));
+      });
+    }
   }
 
   protected addPlant(plant: Plant) {

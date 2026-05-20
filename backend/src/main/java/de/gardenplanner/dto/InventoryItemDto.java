@@ -13,6 +13,7 @@ public class InventoryItemDto {
     public String plantColorHex;
     public String plantCategory;
     public int quantity;
+    public int toBuy;
 
     public static InventoryItemDto from(InventoryItem item) {
         InventoryItemDto dto = new InventoryItemDto();
@@ -23,6 +24,7 @@ public class InventoryItemDto {
         dto.plantColorHex = item.plant.colorHex;
         dto.plantCategory = item.plant.category != null ? item.plant.category.name() : null;
         dto.quantity = item.quantity;
+        dto.toBuy = item.toBuy;
         return dto;
     }
 }

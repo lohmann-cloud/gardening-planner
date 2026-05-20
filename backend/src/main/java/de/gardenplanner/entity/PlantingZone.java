@@ -40,4 +40,20 @@ public class PlantingZone extends PanacheEntityBase {
 
     @Column(nullable = false)
     public double spacingFactor = 1.0;
+
+    // ─── Inventory accounting ──────────────────────────────────────────────
+    // How much this planting drew from stock vs. the shopping list, and whose
+    // inventory it was charged to — so deleting the zone can put it back.
+
+    @JsonIgnore
+    @Column(name = "stock_consumed", nullable = false)
+    public int stockConsumed = 0;
+
+    @JsonIgnore
+    @Column(name = "to_buy_consumed", nullable = false)
+    public int toBuyConsumed = 0;
+
+    @JsonIgnore
+    @Column(name = "inventory_user_id")
+    public UUID inventoryUserId;
 }

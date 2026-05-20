@@ -130,24 +130,7 @@ export class BedPlannerComponent implements OnInit {
     const rect = this.selectionRect();
     const plant = this.selectedPlant();
     if (!rect || !plant) return [];
-    const factor = this.spacingFactor();
-    const spacingCells = Math.max(1, Math.round(plant.spacingCm * factor / CELL_CM));
-    const rowSpacingCells = Math.max(1, Math.round((plant.rowSpacingCm ?? plant.spacingCm) * factor / CELL_CM));
-    const candidates = this.computePositionsInArea(rect.minCol, rect.minRow, rect.maxCol, rect.maxRow, plant);
-    const placed: { col: number; row: number; spacingCells: number; rowSpacingCells: number }[] = [];
-    for (const zv of this.zoneViews()) {
-      const zf = zv.zone.spacingFactor ?? 1;
-      const s = Math.max(1, Math.round(zv.zone.plant.spacingCm * zf / CELL_CM));
-      const rs = Math.max(1, Math.round((zv.zone.plant.rowSpacingCm ?? zv.zone.plant.spacingCm) * zf / CELL_CM));
-      for (const spot of zv.plantSpots) placed.push({ col: spot.col, row: spot.row, spacingCells: s, rowSpacingCells: rs });
-    }
-    return candidates.filter(
-      (pos) => !placed.some((pl) => {
-        const minDx = (spacingCells + pl.spacingCells) / 2;
-        const minDy = (rowSpacingCells + pl.rowSpacingCells) / 2;
-        return Math.abs(pos.col - pl.col) < minDx && Math.abs(pos.row - pl.row) < minDy;
-      })
-    );
+    return this.placeableSpots(rect.minCol, rect.minRow, rect.maxCol, rect.maxRow, plant, this.spacingFactor());
   });
 
   protected readonly previewSpotSet = computed(() => {
@@ -190,7 +173,7 @@ export class BedPlannerComponent implements OnInit {
       setTimeout(() => this.fitToContainer(), 0);
     });
     this.api.getPlants().subscribe((p) => this.plants.set(p));
-    this.api.getInventory().subscribe(inv => this.inventory.set(inv));
+    this.loadInventory();
     this.loadPlan(gardenId, bedId);
   }
 
@@ -304,9 +287,11 @@ export class BedPlannerComponent implements OnInit {
       maxCol: rect.maxCol,
       maxRow: rect.maxRow,
       spacingFactor: this.spacingFactor(),
+      plantCount: this.previewSpots().length,
     }).subscribe(() => {
       this.selection.set(null);
       this.loadPlan(g.id, b.id);
+      this.loadInventory();
     });
   }
 
@@ -326,7 +311,11 @@ export class BedPlannerComponent implements OnInit {
       maxCol: this.cols() - 1,
       maxRow: this.rows() - 1,
       spacingFactor: this.spacingFactor(),
-    }).subscribe(() => this.loadPlan(g.id, b.id));
+      plantCount: this.placeableSpots(0, 0, this.cols() - 1, this.rows() - 1, plant, this.spacingFactor()).length,
+    }).subscribe(() => {
+      this.loadPlan(g.id, b.id);
+      this.loadInventory();
+    });
   }
 
   protected removeZone(zoneView: ZoneView, event: MouseEvent) {
@@ -336,7 +325,10 @@ export class BedPlannerComponent implements OnInit {
     const b = this.bed();
     if (!g || !b) return;
     this.api.removePlantingZone(g.id, b.id, this.year(), zoneView.zone.id)
-      .subscribe(() => this.loadPlan(g.id, b.id));
+      .subscribe(() => {
+        this.loadPlan(g.id, b.id);
+        this.loadInventory();
+      });
   }
 
   protected setSidebarTab(tab: 'plants' | 'inventory') {
@@ -376,9 +368,11 @@ export class BedPlannerComponent implements OnInit {
       maxCol: col,
       maxRow: row,
       spacingFactor: this.spacingFactor(),
+      plantCount: this.placeableSpots(col, row, col, row, plant, this.spacingFactor()).length,
     }).subscribe(() => {
       this.draggedInventoryPlant = null;
       this.loadPlan(g.id, b.id);
+      this.loadInventory();
     });
   }
 
@@ -412,6 +406,31 @@ export class BedPlannerComponent implements OnInit {
   protected plantColor(plant: Plant): string { return plantColor(plant); }
   protected plantColorLight(plant: Plant): string { return plantColorLight(plant); }
   protected plantIcon(plant: Plant): string { return plantIcon(plant); }
+
+  /** Positions a plant would actually occupy in an area, after avoiding the plants in existing zones. */
+  private placeableSpots(minCol: number, minRow: number, maxCol: number, maxRow: number, plant: Plant, factor: number): { col: number; row: number }[] {
+    const spacingCells = Math.max(1, Math.round(plant.spacingCm * factor / CELL_CM));
+    const rowSpacingCells = Math.max(1, Math.round((plant.rowSpacingCm ?? plant.spacingCm) * factor / CELL_CM));
+    const candidates = this.computePositionsInArea(minCol, minRow, maxCol, maxRow, plant, factor);
+    const placed: { col: number; row: number; spacingCells: number; rowSpacingCells: number }[] = [];
+    for (const zv of this.zoneViews()) {
+      const zf = zv.zone.spacingFactor ?? 1;
+      const s = Math.max(1, Math.round(zv.zone.plant.spacingCm * zf / CELL_CM));
+      const rs = Math.max(1, Math.round((zv.zone.plant.rowSpacingCm ?? zv.zone.plant.spacingCm) * zf / CELL_CM));
+      for (const spot of zv.plantSpots) placed.push({ col: spot.col, row: spot.row, spacingCells: s, rowSpacingCells: rs });
+    }
+    return candidates.filter(
+      (pos) => !placed.some((pl) => {
+        const minDx = (spacingCells + pl.spacingCells) / 2;
+        const minDy = (rowSpacingCells + pl.rowSpacingCells) / 2;
+        return Math.abs(pos.col - pl.col) < minDx && Math.abs(pos.row - pl.row) < minDy;
+      })
+    );
+  }
+
+  private loadInventory() {
+    this.api.getInventory().subscribe(inv => this.inventory.set(inv));
+  }
 
   private computePositionsInArea(minCol: number, minRow: number, maxCol: number, maxRow: number, plant: Plant, factor = this.spacingFactor()): { col: number; row: number }[] {
     const sCol = Math.max(1, Math.round(plant.spacingCm * factor / CELL_CM));

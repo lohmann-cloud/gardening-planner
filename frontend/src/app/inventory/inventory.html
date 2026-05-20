@@ -48,65 +48,103 @@
   }
 
   @if (inventory().length) {
-    <div class="mb-4">
+    <div class="mb-5">
       <input
         type="text"
-        placeholder="Bestand durchsuchen…"
+        placeholder="Suchen…"
         [value]="search()"
         (input)="onSearch($event)"
         class="field-input"
       />
     </div>
-  }
 
-  @if (filteredInventory().length) {
-    <div class="space-y-2">
-      @for (item of filteredInventory(); track item.plantId) {
-        <div class="inventory-item surface flex items-center gap-4 px-4 py-3"
-             [style.border-left]="'4px solid ' + colorFor(item)">
-          <span class="text-2xl w-9 text-center flex-shrink-0">{{ iconFor(item) }}</span>
-          <div class="flex-1 min-w-0">
-            <p class="m-0 text-sm font-semibold text-cream-800 truncate">{{ item.plantName }}</p>
-            <p class="m-0 text-xs text-cream-400">
-              @if (item.quantity === 1) {
-                1 Pflanze
-              } @else {
-                {{ item.quantity }} Pflanzen
-              }
-            </p>
-          </div>
-          <div class="flex items-center gap-2 flex-shrink-0">
-            <button
-              class="w-8 h-8 flex items-center justify-center rounded-lg border border-cream-200 bg-white text-cream-600 hover:bg-cream-50 font-bold text-lg leading-none transition-colors"
-              type="button"
-              (click)="decrement(item)"
-              [disabled]="getQuantity(item) <= 0"
-            >−</button>
-            <input
-              type="number"
-              class="w-14 text-center field-input px-1 py-1 text-sm"
-              [value]="getQuantity(item)"
-              (input)="onQuantityInput(item, $event)"
-              (blur)="saveQuantity(item)"
-              (keydown.enter)="saveQuantity(item)"
-              min="0"
-            />
-            <button
-              class="w-8 h-8 flex items-center justify-center rounded-lg border border-cream-200 bg-white text-cream-600 hover:bg-cream-50 font-bold text-lg leading-none transition-colors"
-              type="button"
-              (click)="increment(item)"
-            >+</button>
-          </div>
-          <button
-            class="flex-shrink-0 text-cream-300 hover:text-red-700 transition-colors text-xl leading-none px-1 ml-1"
-            type="button"
-            title="Aus Bestand entfernen"
-            (click)="removeItem(item)"
-          >×</button>
+    <!-- Bestand -->
+    <section class="mb-8">
+      <h2 class="text-xs uppercase tracking-[0.15em] text-cream-500 font-semibold mb-3">Bestand</h2>
+      @if (stockItems().length) {
+        <div class="space-y-2">
+          @for (item of stockItems(); track item.plantId) {
+            <div class="inventory-item surface flex items-center gap-4 px-4 py-3"
+                 [style.border-left]="'4px solid ' + colorFor(item)">
+              <span class="text-2xl w-9 text-center flex-shrink-0">{{ iconFor(item) }}</span>
+              <div class="flex-1 min-w-0">
+                <p class="m-0 text-sm font-semibold text-cream-800 truncate">{{ item.plantName }}</p>
+                <p class="m-0 text-xs text-cream-400">
+                  @if (item.quantity === 1) {
+                    1 Pflanze
+                  } @else {
+                    {{ item.quantity }} Pflanzen
+                  }
+                </p>
+              </div>
+              <div class="flex items-center gap-2 flex-shrink-0">
+                <button
+                  class="w-8 h-8 flex items-center justify-center rounded-lg border border-cream-200 bg-white text-cream-600 hover:bg-cream-50 font-bold text-lg leading-none transition-colors"
+                  type="button"
+                  (click)="decrement(item)"
+                  [disabled]="getQuantity(item) <= 0"
+                >−</button>
+                <input
+                  type="number"
+                  class="w-14 text-center field-input px-1 py-1 text-sm"
+                  [value]="getQuantity(item)"
+                  (input)="onQuantityInput(item, $event)"
+                  (blur)="saveQuantity(item)"
+                  (keydown.enter)="saveQuantity(item)"
+                  min="0"
+                />
+                <button
+                  class="w-8 h-8 flex items-center justify-center rounded-lg border border-cream-200 bg-white text-cream-600 hover:bg-cream-50 font-bold text-lg leading-none transition-colors"
+                  type="button"
+                  (click)="increment(item)"
+                >+</button>
+              </div>
+              <button
+                class="flex-shrink-0 text-cream-300 hover:text-red-700 transition-colors text-xl leading-none px-1 ml-1"
+                type="button"
+                title="Aus Bestand entfernen"
+                (click)="removeItem(item)"
+              >×</button>
+            </div>
+          }
         </div>
+      } @else {
+        <p class="text-sm text-cream-400 italic m-0">
+          @if (search()) {
+            Kein Bestand gefunden
+          } @else {
+            Kein Bestand vorhanden – alles ausgepflanzt.
+          }
+        </p>
       }
-    </div>
-  } @else if (!inventory().length) {
+    </section>
+
+    <!-- Einkaufsliste -->
+    @if (shoppingItems().length) {
+      <section>
+        <div class="flex items-baseline gap-2 mb-3 flex-wrap">
+          <h2 class="text-xs uppercase tracking-[0.15em] text-cream-500 font-semibold m-0">Einkaufsliste</h2>
+          <span class="text-[11px] text-cream-400">über den Bestand hinaus gepflanzt</span>
+        </div>
+        <div class="space-y-2">
+          @for (item of shoppingItems(); track item.plantId) {
+            <div class="inventory-item surface flex items-center gap-4 px-4 py-3"
+                 [style.border-left]="'4px solid ' + colorFor(item)">
+              <span class="text-2xl w-9 text-center flex-shrink-0">{{ iconFor(item) }}</span>
+              <div class="flex-1 min-w-0">
+                <p class="m-0 text-sm font-semibold text-cream-800 truncate">{{ item.plantName }}</p>
+                <p class="m-0 text-xs text-cream-400">noch zu besorgen</p>
+              </div>
+              <span
+                class="flex-shrink-0 inline-flex items-center justify-center min-w-[2rem] h-7 rounded-full px-2 text-sm font-bold text-white"
+                [style.background]="colorFor(item)"
+              >{{ item.toBuy }}</span>
+            </div>
+          }
+        </div>
+      </section>
+    }
+  } @else {
     <div class="surface text-center py-20 px-6">
       <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-leaf-100 text-leaf-700 text-3xl mb-4 shadow-sm">
         🪴
@@ -115,7 +153,5 @@
       <p class="text-cream-500 m-0 mb-6">Füge Pflanzen hinzu, die du pflanzen möchtest.</p>
       <button class="btn btn-primary" type="button" (click)="toggleAddPanel()">+ Pflanze hinzufügen</button>
     </div>
-  } @else {
-    <p class="text-sm text-cream-400 italic">Keine Pflanzen gefunden</p>
   }
 </div>
