@@ -3,8 +3,8 @@ import { DecimalPipe } from '@angular/common';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { ApiService, Garden, GardenBed, InventoryItem, Plant, PlantingPlan, PlantingZone } from '../services/api.service';
 import { plantColor, plantColorLight, plantIcon } from '../plant-utils';
+import { plantPositions, CELL_CM } from '../planning/plant-grid';
 
-const CELL_CM = 5;
 const CELL_PX = 20;
 
 interface Selection {
@@ -533,38 +533,11 @@ export class BedPlannerComponent implements OnInit {
   }
 
   private computePositionsInArea(minCol: number, minRow: number, maxCol: number, maxRow: number, plant: Plant, factor = this.spacingFactor()): { col: number; row: number }[] {
-    const sCol = Math.max(1, Math.round(plant.spacingCm * factor / CELL_CM));
-    const sRow = Math.max(1, Math.round((plant.rowSpacingCm ?? plant.spacingCm) * factor / CELL_CM));
-    // Try both orientations, pick the one with more plants
-    const orientA = this.computeGrid(minCol, minRow, maxCol, maxRow, sCol, sRow);
-    const orientB = sCol !== sRow ? this.computeGrid(minCol, minRow, maxCol, maxRow, sRow, sCol) : [];
-    return orientA.length >= orientB.length ? orientA : orientB;
-  }
-
-  private computeGrid(minCol: number, minRow: number, maxCol: number, maxRow: number, colSpacing: number, rowSpacing: number): { col: number; row: number }[] {
-    const halfCol = Math.ceil(colSpacing / 2);
-    const halfRow = Math.ceil(rowSpacing / 2);
-    const effMinCol = Math.max(minCol, halfCol);
-    const effMaxCol = Math.min(maxCol, this.cols() - 1 - halfCol);
-    const effMinRow = Math.max(minRow, halfRow);
-    const effMaxRow = Math.min(maxRow, this.rows() - 1 - halfRow);
-    // Bed too small for any margin — fall back to a single centered plant
-    if (effMinCol > effMaxCol || effMinRow > effMaxRow) {
-      return [{ col: Math.round((minCol + maxCol) / 2), row: Math.round((minRow + maxRow) / 2) }];
-    }
-    const zoneCols = effMaxCol - effMinCol + 1;
-    const zoneRows = effMaxRow - effMinRow + 1;
-    const nCols = Math.floor((zoneCols - 1) / colSpacing) + 1;
-    const nRows = Math.floor((zoneRows - 1) / rowSpacing) + 1;
-    const offsetCol = Math.floor((zoneCols - 1 - (nCols - 1) * colSpacing) / 2);
-    const offsetRow = Math.floor((zoneRows - 1 - (nRows - 1) * rowSpacing) / 2);
-    const positions: { col: number; row: number }[] = [];
-    for (let ri = 0; ri < nRows; ri++) {
-      for (let ci = 0; ci < nCols; ci++) {
-        positions.push({ col: effMinCol + offsetCol + ci * colSpacing, row: effMinRow + offsetRow + ri * rowSpacing });
-      }
-    }
-    return positions;
+    return plantPositions(
+      minCol, minRow, maxCol, maxRow,
+      this.cols(), this.rows(),
+      plant.spacingCm, plant.rowSpacingCm ?? plant.spacingCm, factor,
+    );
   }
 
   private loadPlan(gardenId: string, bedId: string) {
