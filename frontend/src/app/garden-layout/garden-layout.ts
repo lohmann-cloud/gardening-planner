@@ -423,9 +423,10 @@ export class GardenLayoutComponent implements OnInit {
     this.rotationBedStart.set(0);
     this.isPanning.set(false);
     this.panningStart = null;
+    // End any in-progress draw, but KEEP plantSel — a pending selection awaiting
+    // confirmation must survive the pointer leaving the canvas (e.g. to reach the bar).
     this.plantDrawBedId = null;
     this.plantAnchorCell = null;
-    this.plantSel.set(null);
   }
 
   protected selectObstacle(obstacle: Obstacle) {
