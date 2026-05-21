@@ -15,7 +15,7 @@ type Tool = 'select' | 'bed' | 'obstacle';
 /** Minimal pointer shape shared by MouseEvent and Touch so handlers serve both. */
 type Ptr = { clientX: number; clientY: number; target: EventTarget | null; button?: number };
 
-interface BedPlantSpot { x: number; y: number; color: string; }
+interface BedPlantSpot { x: number; y: number; color: string; icon: string; }
 
 @Component({
   selector: 'app-garden-layout',
@@ -210,7 +210,7 @@ export class GardenLayoutComponent implements OnInit {
   }
 
   protected onCanvasMove(event: Ptr) {
-    if (this.mode() === 'plant' && this.plantSel()) { this.plantPointMove(event); return; }
+    if (this.mode() === 'plant' && this.plantDrawBedId) { this.plantPointMove(event); return; }
     // Rotation
     const rotating = this.rotatingBed();
     if (rotating) {
@@ -279,7 +279,7 @@ export class GardenLayoutComponent implements OnInit {
   }
 
   protected onCanvasMouseUp(event: Ptr) {
-    if (this.mode() === 'plant' && this.plantSel()) { this.plantPointUp(); return; }
+    if (this.mode() === 'plant' && this.plantDrawBedId) { this.plantPointUp(); return; }
     // Rotation end
     const rotating = this.rotatingBed();
     if (rotating) {
@@ -755,6 +755,13 @@ export class GardenLayoutComponent implements OnInit {
 
   protected selectPlantForPlanting(plant: Plant) {
     this.selectedPlant.set(this.selectedPlant()?.id === plant.id ? null : plant);
+    this.toolbarOpen.set(false); // close the drawer so the canvas is reachable (no-op on desktop)
+  }
+
+  protected enterMode(m: 'beds' | 'plant') {
+    this.mode.set(m);
+    this.cancelPlantSelection();
+    this.toolbarOpen.set(m === 'plant'); // auto-open the picker drawer on entering plant mode
   }
 
   protected setPlantTab(tab: 'plants' | 'inventory') {
@@ -848,6 +855,11 @@ export class GardenLayoutComponent implements OnInit {
     return this.bedSpots().get(bedId) ?? [];
   }
 
+  protected selectedIcon(): string {
+    const p = this.selectedPlant();
+    return p ? plantIcon(p) : '🌱';
+  }
+
   protected bedStroke(bedId: string): string {
     const plants = this.bedPlants().get(bedId);
     return plants?.length ? plantColor(plants[0]) : '#2e7d32';
@@ -899,12 +911,12 @@ export class GardenLayoutComponent implements OnInit {
           for (const v of views) {
             for (const s of v.spots) {
               const tl = cellTopLeftMeters(s.col, s.row, bed);
-              spots.push({ x: tl.x + 0.025, y: tl.y + 0.025, color: plantColor(v.zone.plant) });
+              spots.push({ x: tl.x + 0.025, y: tl.y + 0.025, color: plantColor(v.zone.plant), icon: plantIcon(v.zone.plant) });
             }
           }
           for (const c of plan.cells) {
             const tl = cellTopLeftMeters(c.col, c.row, bed);
-            spots.push({ x: tl.x + 0.025, y: tl.y + 0.025, color: plantColor(c.plant) });
+            spots.push({ x: tl.x + 0.025, y: tl.y + 0.025, color: plantColor(c.plant), icon: plantIcon(c.plant) });
           }
           if (spots.length) spotsMap.set(bed.id, spots);
         });
@@ -1021,6 +1033,11 @@ export class GardenLayoutComponent implements OnInit {
     for (const bed of this.garden()?.beds ?? []) {
       const cell = bedCellAtPoint(pt, bed);
       if (cell) {
+        // Don't start a selection on a cell already covered by a zone.
+        const occupied = (this.bedZoneInputs().get(bed.id) ?? []).some(
+          (z) => cell.col >= z.minCol && cell.col <= z.maxCol && cell.row >= z.minRow && cell.row <= z.maxRow,
+        );
+        if (occupied) return false;
         this.plantDrawBedId = bed.id;
         this.plantAnchorCell = { col: cell.col, row: cell.row };
         this.plantSel.set({ bedId: bed.id, minCol: cell.col, minRow: cell.row, maxCol: cell.col, maxRow: cell.row });
@@ -1057,29 +1074,59 @@ export class GardenLayoutComponent implements OnInit {
     return { col, row };
   }
 
+  /** End the drag; keep the selection for the two-step confirm bar. */
   private plantPointUp() {
-    const sel = this.plantSel();
-    const bed = this.bedById(this.plantDrawBedId);
-    const g = this.garden();
-    const plant = this.selectedPlant();
     this.plantDrawBedId = null;
     this.plantAnchorCell = null;
-    this.plantSel.set(null);
-    if (!sel || !bed || !g || !plant) return;
+  }
+
+  /** Spots the pending selection would place, suppressed against the bed's existing zones. */
+  protected readonly plantPreviewSpots = computed(() => {
+    const sel = this.plantSel();
+    const plant = this.selectedPlant();
+    if (!sel || !plant) return [] as { col: number; row: number }[];
+    const bed = this.garden()?.beds.find((b) => b.id === sel.bedId);
+    if (!bed) return [];
     const { cols, rows } = bedColsRows(bed);
+    const existing = this.bedZoneInputs().get(bed.id) ?? [];
     const newInput: ZoneInput = {
       minCol: sel.minCol, minRow: sel.minRow, maxCol: sel.maxCol, maxRow: sel.maxRow,
       spacingFactor: this.plantSpacingFactor(),
       spacingCm: plant.spacingCm, rowSpacingCm: plant.rowSpacingCm ?? plant.spacingCm,
     };
-    const existing = this.bedZoneInputs().get(bed.id) ?? [];
     const views = computeBedZoneViews([...existing, newInput], cols, rows);
-    const plantCount = views[views.length - 1].spots.length;
-    const year = new Date().getFullYear();
-    this.api.addPlantingZone(g.id, bed.id, year, {
+    return views[views.length - 1].spots;
+  });
+  protected readonly plantPreviewCount = computed(() => this.plantPreviewSpots().length);
+
+  /** Garden-metre centres of the preview spots, for rendering inside the bed's <g>. */
+  protected plantPreviewCentres(bed: GardenBed): { x: number; y: number }[] {
+    return this.plantPreviewSpots().map((s) => {
+      const tl = cellTopLeftMeters(s.col, s.row, bed);
+      return { x: tl.x + 0.025, y: tl.y + 0.025 };
+    });
+  }
+
+  protected confirmPlantSelection() {
+    const sel = this.plantSel();
+    const plant = this.selectedPlant();
+    const g = this.garden();
+    if (!sel || !plant || !g) return;
+    const plantCount = this.plantPreviewCount();
+    if (plantCount <= 0) return;
+    this.api.addPlantingZone(g.id, sel.bedId, new Date().getFullYear(), {
       plantId: plant.id, minCol: sel.minCol, minRow: sel.minRow, maxCol: sel.maxCol, maxRow: sel.maxRow,
       spacingFactor: this.plantSpacingFactor(), plantCount,
-    }).subscribe(() => this.loadGarden(g.id));
+    }).subscribe(() => {
+      this.cancelPlantSelection();
+      this.loadGarden(g.id);
+    });
+  }
+
+  protected cancelPlantSelection() {
+    this.plantDrawBedId = null;
+    this.plantAnchorCell = null;
+    this.plantSel.set(null);
   }
 
   protected bedGridLines(bed: GardenBed): { xs: number[]; ys: number[] } {
