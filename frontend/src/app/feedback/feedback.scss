@@ -1,0 +1,45 @@
+:host {
+  display: block;
+}
+
+.feedback-item {
+  border-left: 4px solid var(--color-cream-200);
+
+  &.prio-high {
+    border-left-color: var(--color-clay-500);
+    .prio-badge {
+      background: var(--color-clay-100);
+      color: var(--color-clay-700);
+    }
+  }
+
+  &.prio-medium {
+    border-left-color: var(--color-leaf-400);
+    .prio-badge {
+      background: var(--color-leaf-100);
+      color: var(--color-leaf-700);
+    }
+  }
+
+  &.prio-low {
+    border-left-color: var(--color-cream-300);
+    .prio-badge {
+      background: var(--color-cream-100);
+      color: var(--color-cream-600);
+    }
+  }
+}
+
+.feedback-done {
+  border-left-color: var(--color-cream-200);
+  background: var(--color-cream-50);
+}
+
+.check-box {
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid var(--color-leaf-500);
+    outline-offset: 2px;
+  }
+}

@@ -14,5 +14,6 @@
     <include file="db/changesets/V7__add_inventory.sql"/>
     <include file="db/changesets/V8__add_inventory_shopping.sql"/>
     <include file="db/changesets/V9__add_sessions.sql"/>
+    <include file="db/changesets/V10__add_feedback.sql"/>
 
 </databaseChangeLog>

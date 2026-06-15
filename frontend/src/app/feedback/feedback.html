@@ -1,0 +1,127 @@
+<div class="feedback-page max-w-3xl mx-auto px-4 sm:px-6 pt-8 sm:pt-10 pb-16">
+  <div class="flex items-center gap-3 mb-6">
+    <a routerLink="/" class="text-cream-500 hover:text-cream-800 transition-colors text-sm font-medium">
+      ← Übersicht
+    </a>
+  </div>
+
+  <div class="mb-6">
+    <p class="text-xs uppercase tracking-[0.15em] text-cream-500 mb-1">Ideen &amp; Fehler</p>
+    <h1 class="text-3xl font-bold text-leaf-800 tracking-tight m-0">Feedback</h1>
+    <p class="text-sm text-cream-500 mt-1 m-0">Wünsche, Ideen und Fehler – für alle sichtbar.</p>
+  </div>
+
+  <!-- Eingabe -->
+  <form class="surface p-4 mb-8 space-y-3" (submit)="$event.preventDefault(); submit()">
+    <label class="field-label">
+      Dein Feedback
+      <textarea
+        class="field-textarea"
+        rows="3"
+        placeholder="Was sollen wir verbessern? Welcher Fehler ist dir aufgefallen?"
+        [value]="message()"
+        (input)="onMessageInput($event)"
+      ></textarea>
+    </label>
+    <div class="flex items-end gap-3 flex-wrap">
+      <label class="field-label flex-1 min-w-[10rem]">
+        Priorität
+        <select class="field-select" [value]="priority()" (change)="onPriorityChange($event)">
+          @for (opt of priorities; track opt.value) {
+            <option [value]="opt.value">{{ opt.label }}</option>
+          }
+        </select>
+      </label>
+      <button
+        class="btn btn-primary"
+        type="submit"
+        [disabled]="!message().trim() || submitting()"
+      >
+        {{ submitting() ? 'Senden…' : 'Absenden' }}
+      </button>
+    </div>
+  </form>
+
+  <!-- Offene Punkte -->
+  <section class="mb-8">
+    <h2 class="text-xs uppercase tracking-[0.15em] text-cream-500 font-semibold mb-3">
+      Offen ({{ openItems().length }})
+    </h2>
+    @if (openItems().length) {
+      <div class="space-y-2">
+        @for (item of openItems(); track item.id) {
+          <div class="feedback-item surface flex items-start gap-3 px-4 py-3"
+               [class]="'prio-' + item.priority.toLowerCase()">
+            <button
+              class="check-box flex-shrink-0 mt-0.5 w-6 h-6 rounded-md border-2 border-cream-300 bg-white hover:border-leaf-500 transition-colors"
+              type="button"
+              title="Als erledigt markieren"
+              (click)="toggleDone(item)"
+              aria-label="Als erledigt markieren"
+            ></button>
+            <div class="flex-1 min-w-0">
+              <p class="m-0 text-sm text-cream-800 whitespace-pre-wrap break-words">{{ item.message }}</p>
+              <div class="flex items-center gap-2 mt-1.5 flex-wrap text-xs text-cream-400">
+                <span class="prio-badge inline-flex items-center px-2 py-0.5 rounded-full font-semibold text-[11px]">
+                  {{ priorityLabel(item.priority) }}
+                </span>
+                <span>{{ item.authorName }}</span>
+                <span class="w-1 h-1 rounded-full bg-cream-300"></span>
+                <span>{{ item.createdAt | date:'dd.MM.yyyy' }}</span>
+              </div>
+            </div>
+            @if (canDelete(item)) {
+              <button
+                class="flex-shrink-0 text-cream-300 hover:text-red-700 transition-colors text-xl leading-none px-1"
+                type="button"
+                title="Löschen"
+                (click)="remove(item)"
+              >×</button>
+            }
+          </div>
+        }
+      </div>
+    } @else {
+      <p class="text-sm text-cream-400 italic m-0">Keine offenen Punkte – alles erledigt. 🎉</p>
+    }
+  </section>
+
+  <!-- Erledigt -->
+  @if (doneItems().length) {
+    <section>
+      <h2 class="text-xs uppercase tracking-[0.15em] text-cream-500 font-semibold mb-3">
+        Erledigt ({{ doneItems().length }})
+      </h2>
+      <div class="space-y-2">
+        @for (item of doneItems(); track item.id) {
+          <div class="feedback-item feedback-done surface flex items-start gap-3 px-4 py-3">
+            <button
+              class="check-box check-box-done flex-shrink-0 mt-0.5 w-6 h-6 rounded-md border-2 border-leaf-500 bg-leaf-500 text-white flex items-center justify-center text-sm leading-none transition-colors"
+              type="button"
+              title="Wieder als offen markieren"
+              (click)="toggleDone(item)"
+              aria-label="Wieder als offen markieren"
+            >✓</button>
+            <div class="flex-1 min-w-0">
+              <p class="m-0 text-sm text-cream-400 line-through whitespace-pre-wrap break-words">{{ item.message }}</p>
+              <div class="flex items-center gap-2 mt-1.5 flex-wrap text-xs text-cream-300">
+                <span>{{ priorityLabel(item.priority) }}</span>
+                <span>{{ item.authorName }}</span>
+                <span class="w-1 h-1 rounded-full bg-cream-200"></span>
+                <span>{{ item.createdAt | date:'dd.MM.yyyy' }}</span>
+              </div>
+            </div>
+            @if (canDelete(item)) {
+              <button
+                class="flex-shrink-0 text-cream-300 hover:text-red-700 transition-colors text-xl leading-none px-1"
+                type="button"
+                title="Löschen"
+                (click)="remove(item)"
+              >×</button>
+            }
+          </div>
+        }
+      </div>
+    </section>
+  }
+</div>

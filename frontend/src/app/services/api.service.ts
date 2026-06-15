@@ -100,6 +100,19 @@ export interface InventoryItem {
   toBuy: number;
 }
 
+export type FeedbackPriority = 'LOW' | 'MEDIUM' | 'HIGH';
+
+export interface Feedback {
+  id: string;
+  message: string;
+  priority: FeedbackPriority;
+  done: boolean;
+  createdAt: string;
+  authorId: string;
+  authorName: string;
+  authorPictureUrl?: string;
+}
+
 export type GardenRole = 'OWNER' | 'COLLABORATOR' | 'VIEWER';
 
 export interface Membership {
@@ -236,6 +249,23 @@ export class ApiService {
 
   markBought(plantId: string) {
     return this.http.post<InventoryItem>(`${API}/inventory/${plantId}/bought`, null);
+  }
+
+  // Feedback
+  getFeedback() {
+    return this.http.get<Feedback[]>(`${API}/feedback`);
+  }
+
+  createFeedback(message: string, priority: FeedbackPriority) {
+    return this.http.post<Feedback>(`${API}/feedback`, { message, priority });
+  }
+
+  setFeedbackDone(id: string, done: boolean) {
+    return this.http.patch<Feedback>(`${API}/feedback/${id}`, { done });
+  }
+
+  deleteFeedback(id: string) {
+    return this.http.delete(`${API}/feedback/${id}`);
   }
 
   getVersion() {
