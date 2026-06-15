@@ -237,4 +237,13 @@ export class ApiService {
   markBought(plantId: string) {
     return this.http.post<InventoryItem>(`${API}/inventory/${plantId}/bought`, null);
   }
+
+  getVersion() {
+    return this.http.get<VersionInfo>(`${API}/version`);
+  }
+}
+
+export interface VersionInfo {
+  gitSha: string;
+  buildTime: string;
 }

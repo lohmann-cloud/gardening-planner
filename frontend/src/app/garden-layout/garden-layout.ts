@@ -9,6 +9,7 @@ import { plantColor, plantColorLight, plantIcon } from '../plant-utils';
 import { planInventory, AutoPlantBed, AutoPlantItem, AutoPlantResult } from '../planning/auto-plant';
 import { bedColsRows, cellTopLeftMeters, bedCellAtPoint } from '../planning/bed-coords';
 import { computeBedZoneViews, ZoneInput } from '../planning/bed-zone-views';
+import { CELL_CM } from '../planning/plant-grid';
 
 type Tool = 'select' | 'bed' | 'obstacle';
 
@@ -918,16 +919,30 @@ export class GardenLayoutComponent implements OnInit {
             plant: z.plant,
           }));
           inputsMap.set(bed.id, zoneInputs);
-          const zoneRects: BedZoneRect[] = plan.zones.map((z) => ({
-            dx: z.minCol * 0.05,
-            dy: z.minRow * 0.05,
-            w: (z.maxCol - z.minCol + 1) * 0.05,
-            h: (z.maxRow - z.minRow + 1) * 0.05,
-            fill: plantColorLight(z.plant),
-            stroke: plantColor(z.plant),
-          }));
-          if (zoneRects.length) zoneRectsMap.set(bed.id, zoneRects);
           const views = computeBedZoneViews(zoneInputs, cols, rows);
+          // Colour the area the plants actually occupy: expand outward from the
+          // outer plants by half the configured spacing, clamped to the bed.
+          const zoneRects: BedZoneRect[] = views.map((v) => {
+            const z = v.zone;
+            const factor = z.spacingFactor ?? 1;
+            const halfCol = Math.ceil(Math.max(1, Math.round((z.spacingCm * factor) / CELL_CM)) / 2);
+            const halfRow = Math.ceil(Math.max(1, Math.round((z.rowSpacingCm * factor) / CELL_CM)) / 2);
+            let minC = z.minCol, maxC = z.maxCol, minR = z.minRow, maxR = z.maxRow;
+            if (v.spots.length) {
+              const cs = v.spots.map((s) => s.col);
+              const rs = v.spots.map((s) => s.row);
+              minC = Math.max(0, Math.min(...cs) - halfCol);
+              maxC = Math.min(cols - 1, Math.max(...cs) + halfCol);
+              minR = Math.max(0, Math.min(...rs) - halfRow);
+              maxR = Math.min(rows - 1, Math.max(...rs) + halfRow);
+            }
+            return {
+              dx: minC * 0.05, dy: minR * 0.05,
+              w: (maxC - minC + 1) * 0.05, h: (maxR - minR + 1) * 0.05,
+              fill: plantColorLight(z.plant), stroke: plantColor(z.plant),
+            };
+          });
+          if (zoneRects.length) zoneRectsMap.set(bed.id, zoneRects);
           views.forEach((v, idx) => {
             legend.push({ bedId: bed.id, bedName: bed.name, zoneId: plan.zones[idx].id, plantName: v.zone.plant.name, color: plantColor(v.zone.plant), count: v.spots.length });
           });
@@ -1130,6 +1145,24 @@ export class GardenLayoutComponent implements OnInit {
       const tl = cellTopLeftMeters(s.col, s.row, bed);
       return { x: tl.x + 0.025, y: tl.y + 0.025 };
     });
+  }
+
+  /** The spacing each preview plant claims, as an ellipse centred on its spot (metres). */
+  protected plantPreviewHalos(bed: GardenBed): { cx: number; cy: number; rx: number; ry: number }[] {
+    const plant = this.selectedPlant();
+    if (!plant) return [];
+    const factor = this.plantSpacingFactor();
+    const rx = (plant.spacingCm * factor) / 100 / 2;
+    const ry = ((plant.rowSpacingCm ?? plant.spacingCm) * factor) / 100 / 2;
+    return this.plantPreviewSpots().map((s) => {
+      const tl = cellTopLeftMeters(s.col, s.row, bed);
+      return { cx: tl.x + 0.025, cy: tl.y + 0.025, rx, ry };
+    });
+  }
+
+  protected previewLightColor(): string {
+    const p = this.selectedPlant();
+    return p ? plantColorLight(p) : '#cbe0c0';
   }
 
   protected confirmPlantSelection() {

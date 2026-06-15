@@ -5,10 +5,12 @@ import { GardenLayoutComponent } from './garden-layout/garden-layout';
 import { PlantsComponent } from './plants/plants';
 import { InventoryComponent } from './inventory/inventory';
 import { LoginComponent } from './login/login';
+import { InfoComponent } from './info/info';
 import { authGuard } from './services/auth.guard';
 
 export const routes: Route[] = [
   { path: 'login', component: LoginComponent },
+  { path: 'info', component: InfoComponent },
   { path: '', component: DashboardComponent, canActivate: [authGuard] },
   { path: 'gardens/new', component: GardenCreateComponent, canActivate: [authGuard] },
   { path: 'gardens/:id', component: GardenLayoutComponent, canActivate: [authGuard] },

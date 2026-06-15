@@ -1,3 +1,5 @@
+import java.time.Instant
+
 plugins {
     id 'java'
     id 'io.quarkus'
@@ -39,4 +41,31 @@ compileJava {
 
 compileTestJava {
     options.encoding = 'UTF-8'
+}
+
+// Stamp build-info.properties with the git commit and build time. In CI these
+// come from the GIT_SHA / BUILD_TIME env vars; locally they fall back to git
+// and the current instant.
+def resolveGitSha = {
+    def envSha = System.getenv('GIT_SHA')
+    if (envSha) return envSha.take(7)
+    try {
+        def proc = new ProcessBuilder('git', 'rev-parse', '--short', 'HEAD')
+            .directory(rootDir).redirectErrorStream(true).start()
+        proc.waitFor()
+        def out = proc.inputStream.text.trim()
+        return out ? out.take(7) : 'unknown'
+    } catch (ignored) {
+        return 'unknown'
+    }
+}
+def buildGitSha = resolveGitSha()
+def buildTime = System.getenv('BUILD_TIME') ?: Instant.now().toString()
+
+processResources {
+    inputs.property('gitSha', buildGitSha)
+    inputs.property('buildTime', buildTime)
+    filesMatching('build-info.properties') {
+        expand(gitSha: buildGitSha, buildTime: buildTime)
+    }
 }

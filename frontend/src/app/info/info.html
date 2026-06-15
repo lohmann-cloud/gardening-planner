@@ -1,0 +1,44 @@
+<div class="info-page max-w-2xl mx-auto px-4 sm:px-6 pt-8 sm:pt-10 pb-16">
+  <div class="flex items-center gap-3 mb-6">
+    <a routerLink="/" class="text-cream-500 hover:text-cream-800 transition-colors text-sm font-medium">
+      ← Übersicht
+    </a>
+  </div>
+
+  <p class="text-xs uppercase tracking-[0.15em] text-cream-500 mb-1">System</p>
+  <h1 class="text-3xl font-bold text-leaf-800 tracking-tight m-0 mb-6">Version &amp; Build</h1>
+
+  <div class="space-y-4">
+    <!-- Frontend -->
+    <section class="surface p-5">
+      <h2 class="text-sm font-semibold text-leaf-700 m-0 mb-3 flex items-center gap-2">
+        <span aria-hidden="true">🖥️</span> Frontend
+      </h2>
+      <dl class="grid grid-cols-[7rem_1fr] gap-y-2 gap-x-3 text-sm m-0">
+        <dt class="text-cream-500">Commit</dt>
+        <dd class="m-0 font-mono text-cream-800">{{ frontend.gitSha }}</dd>
+        <dt class="text-cream-500">Build</dt>
+        <dd class="m-0 font-mono text-cream-800">{{ frontend.buildTime }}</dd>
+      </dl>
+    </section>
+
+    <!-- Backend -->
+    <section class="surface p-5">
+      <h2 class="text-sm font-semibold text-leaf-700 m-0 mb-3 flex items-center gap-2">
+        <span aria-hidden="true">⚙️</span> Backend
+      </h2>
+      @if (loading()) {
+        <p class="text-sm text-cream-400 italic m-0">Wird geladen…</p>
+      } @else if (backendError() || !backend()) {
+        <p class="text-sm text-red-700 m-0">Backend nicht erreichbar.</p>
+      } @else if (backend(); as b) {
+        <dl class="grid grid-cols-[7rem_1fr] gap-y-2 gap-x-3 text-sm m-0">
+          <dt class="text-cream-500">Commit</dt>
+          <dd class="m-0 font-mono text-cream-800">{{ b.gitSha }}</dd>
+          <dt class="text-cream-500">Build</dt>
+          <dd class="m-0 font-mono text-cream-800">{{ b.buildTime }}</dd>
+        </dl>
+      }
+    </section>
+  </div>
+</div>

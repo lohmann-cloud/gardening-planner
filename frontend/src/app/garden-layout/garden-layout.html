@@ -349,6 +349,10 @@
                         [attr.x]="b.xM + ps.minCol * 0.05" [attr.y]="b.yM + ps.minRow * 0.05"
                         [attr.width]="(ps.maxCol - ps.minCol + 1) * 0.05" [attr.height]="(ps.maxRow - ps.minRow + 1) * 0.05"
                         fill="rgba(207,102,41,0.18)" stroke="#cf6629" stroke-width="0.02" pointer-events="none" />
+                      @for (h of plantPreviewHalos(b); track $index) {
+                        <ellipse [attr.cx]="h.cx" [attr.cy]="h.cy" [attr.rx]="h.rx" [attr.ry]="h.ry"
+                                 [attr.fill]="previewLightColor()" opacity="0.5" pointer-events="none" />
+                      }
                       @for (pc of plantPreviewCentres(b); track $index) {
                         <text [attr.x]="pc.x" [attr.y]="pc.y" text-anchor="middle" dominant-baseline="central"
                               font-size="0.05" opacity="0.5" pointer-events="none">{{ selectedIcon() }}</text>
