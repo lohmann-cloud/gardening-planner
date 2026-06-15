@@ -38,7 +38,6 @@ export class GardenLayoutComponent implements OnInit {
   private readonly router = inject(Router);
 
   protected readonly garden = signal<Garden | null>(null);
-  protected readonly bedPlants = signal<Map<string, Plant[]>>(new Map());
   protected readonly tool = signal<Tool>('select');
   protected readonly toolbarOpen = signal(false);
   protected readonly mode = signal<'beds' | 'plant'>('beds');
@@ -880,12 +879,6 @@ export class GardenLayoutComponent implements OnInit {
     return '#b3a98c';
   }
 
-  protected bedIconText(bedId: string): string {
-    const plants = this.bedPlants().get(bedId);
-    if (!plants?.length) return '';
-    return plants.slice(0, 3).map(p => plantIcon(p)).join('');
-  }
-
   private loadGarden(id: string) {
     this.api.getInventory().subscribe((inv) => this.inventory.set(inv));
     const year = new Date().getFullYear();
@@ -894,23 +887,12 @@ export class GardenLayoutComponent implements OnInit {
       if (!g.beds.length) return;
       const planRequests = g.beds.map((b) => this.api.getPlantingPlan(id, b.id, year));
       forkJoin(planRequests).subscribe((plans) => {
-        const plantsMap = new Map<string, Plant[]>();
         const spotsMap = new Map<string, BedPlantSpot[]>();
         const zoneRectsMap = new Map<string, BedZoneRect[]>();
         const inputsMap = new Map<string, ZoneInput[]>();
         const legend: { bedId: string; bedName: string; zoneId: string; plantName: string; color: string; count: number }[] = [];
         plans.forEach((plan, i) => {
           const bed = g.beds[i];
-          const seen = new Set<string>();
-          const plants: Plant[] = [];
-          for (const z of plan.zones) {
-            if (!seen.has(z.plant.id)) { seen.add(z.plant.id); plants.push(z.plant); }
-          }
-          for (const c of plan.cells) {
-            if (!seen.has(c.plant.id)) { seen.add(c.plant.id); plants.push(c.plant); }
-          }
-          if (plants.length) plantsMap.set(bed.id, plants);
-
           const { cols, rows } = bedColsRows(bed);
           const zoneInputs = plan.zones.map((z) => ({
             minCol: z.minCol, minRow: z.minRow, maxCol: z.maxCol, maxRow: z.maxRow,
@@ -959,7 +941,6 @@ export class GardenLayoutComponent implements OnInit {
           }
           if (spots.length) spotsMap.set(bed.id, spots);
         });
-        this.bedPlants.set(plantsMap);
         this.bedSpots.set(spotsMap);
         this.bedZoneRects.set(zoneRectsMap);
         this.bedZoneInputs.set(inputsMap);

@@ -313,23 +313,13 @@
                     [attr.opacity]="isDragging ? 0.7 : 1"
                     rx="0.02" pointer-events="none" />
                 }
-                @let icons = bedIconText(b.id);
                 <text
-                  [attr.x]="cx" [attr.y]="icons ? cy - Math.min(b.widthM, b.lengthM) * 0.1 : cy"
+                  [attr.x]="cx" [attr.y]="cy"
                   text-anchor="middle" dominant-baseline="central"
                   [attr.font-size]="Math.min(b.widthM, b.lengthM) * 0.28" fill="#2e4127"
                   [attr.opacity]="isDragging ? 0.7 : 1"
                   pointer-events="none"
                 >{{ b.name }}</text>
-                @if (icons) {
-                  <text
-                    [attr.x]="cx" [attr.y]="cy + Math.min(b.widthM, b.lengthM) * 0.18"
-                    text-anchor="middle" dominant-baseline="central"
-                    [attr.font-size]="Math.min(b.widthM, b.lengthM) * 0.22"
-                    [attr.opacity]="isDragging ? 0.7 : 1"
-                    pointer-events="none"
-                  >{{ icons }}</text>
-                }
                 <!-- Plant positions are shown in every mode. -->
                 @for (s of bedSpotsFor(b.id); track $index) {
                   <text [attr.x]="s.x" [attr.y]="s.y" text-anchor="middle" dominant-baseline="central"
