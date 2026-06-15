@@ -101,6 +101,12 @@ export class InventoryComponent implements OnInit {
     }
   }
 
+  protected markBought(item: InventoryItem) {
+    this.api.markBought(item.plantId).subscribe(updated => {
+      this.inventory.update(inv => inv.map(i => i.plantId === updated.plantId ? updated : i));
+    });
+  }
+
   protected addPlant(plant: Plant) {
     this.api.upsertInventory(plant.id, 1).subscribe(item => {
       this.inventory.update(inv => [...inv, item]);

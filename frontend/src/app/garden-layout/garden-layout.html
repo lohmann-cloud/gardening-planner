@@ -305,6 +305,14 @@
                   [attr.opacity]="isDragging ? 0.7 : 1"
                   rx="0.06"
                 />
+                @for (zr of bedZoneRectsFor(b.id); track $index) {
+                  <rect
+                    [attr.x]="bx + zr.dx" [attr.y]="by + zr.dy"
+                    [attr.width]="zr.w" [attr.height]="zr.h"
+                    [attr.fill]="zr.fill" [attr.stroke]="zr.stroke" stroke-width="0.02"
+                    [attr.opacity]="isDragging ? 0.7 : 1"
+                    rx="0.02" pointer-events="none" />
+                }
                 @let icons = bedIconText(b.id);
                 <text
                   [attr.x]="cx" [attr.y]="icons ? cy - Math.min(b.widthM, b.lengthM) * 0.1 : cy"

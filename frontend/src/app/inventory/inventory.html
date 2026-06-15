@@ -139,6 +139,12 @@
                 class="flex-shrink-0 inline-flex items-center justify-center min-w-[2rem] h-7 rounded-full px-2 text-sm font-bold text-white"
                 [style.background]="colorFor(item)"
               >{{ item.toBuy }}</span>
+              <button
+                class="btn btn-sm flex-shrink-0 border border-cream-200 bg-white text-leaf-700 hover:bg-leaf-50 transition-colors"
+                type="button"
+                title="Als gekauft markieren"
+                (click)="markBought(item)"
+              >Gekauft ✓</button>
             </div>
           }
         </div>

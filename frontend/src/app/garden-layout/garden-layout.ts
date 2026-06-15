@@ -16,6 +16,8 @@ type Tool = 'select' | 'bed' | 'obstacle';
 type Ptr = { clientX: number; clientY: number; target: EventTarget | null; button?: number };
 
 interface BedPlantSpot { x: number; y: number; color: string; icon: string; }
+/** A planted zone's rectangle, offset from the bed origin in metres. */
+interface BedZoneRect { dx: number; dy: number; w: number; h: number; fill: string; stroke: string; }
 
 @Component({
   selector: 'app-garden-layout',
@@ -49,6 +51,8 @@ export class GardenLayoutComponent implements OnInit {
   });
   /** Per bed id: rendered plant spots (garden-metre centre of each spot, in the bed's unrotated frame). */
   protected readonly bedSpots = signal<Map<string, BedPlantSpot[]>>(new Map());
+  /** Per bed id: the coloured rectangle of each planted zone (only the planted area, not the whole bed). */
+  protected readonly bedZoneRects = signal<Map<string, BedZoneRect[]>>(new Map());
   /** Per bed id: the zone inputs (geometry + spacing) of its existing zones, in plan order. */
   protected readonly bedZoneInputs = signal<Map<string, ZoneInput[]>>(new Map());
   protected readonly autoPlantOpen = signal(false);
@@ -847,13 +851,17 @@ export class GardenLayoutComponent implements OnInit {
     return (this.autoPlantResult()?.zones ?? []).reduce((n, z) => n + z.plantCount, 0);
   }
 
-  protected bedFill(bedId: string): string {
-    const plants = this.bedPlants().get(bedId);
-    return plants?.length ? plantColorLight(plants[0]) : '#a5d6a7';
+  /** Beds always render as neutral soil; only the planted zones are coloured. */
+  protected bedFill(_bedId: string): string {
+    return '#e7e0cf';
   }
 
   protected bedSpotsFor(bedId: string): BedPlantSpot[] {
     return this.bedSpots().get(bedId) ?? [];
+  }
+
+  protected bedZoneRectsFor(bedId: string): BedZoneRect[] {
+    return this.bedZoneRects().get(bedId) ?? [];
   }
 
   protected selectedIcon(): string {
@@ -861,9 +869,8 @@ export class GardenLayoutComponent implements OnInit {
     return p ? plantIcon(p) : '🌱';
   }
 
-  protected bedStroke(bedId: string): string {
-    const plants = this.bedPlants().get(bedId);
-    return plants?.length ? plantColor(plants[0]) : '#2e7d32';
+  protected bedStroke(_bedId: string): string {
+    return '#b3a98c';
   }
 
   protected bedIconText(bedId: string): string {
@@ -882,6 +889,7 @@ export class GardenLayoutComponent implements OnInit {
       forkJoin(planRequests).subscribe((plans) => {
         const plantsMap = new Map<string, Plant[]>();
         const spotsMap = new Map<string, BedPlantSpot[]>();
+        const zoneRectsMap = new Map<string, BedZoneRect[]>();
         const inputsMap = new Map<string, ZoneInput[]>();
         const legend: { bedId: string; bedName: string; zoneId: string; plantName: string; color: string; count: number }[] = [];
         plans.forEach((plan, i) => {
@@ -904,6 +912,15 @@ export class GardenLayoutComponent implements OnInit {
             plant: z.plant,
           }));
           inputsMap.set(bed.id, zoneInputs);
+          const zoneRects: BedZoneRect[] = plan.zones.map((z) => ({
+            dx: z.minCol * 0.05,
+            dy: z.minRow * 0.05,
+            w: (z.maxCol - z.minCol + 1) * 0.05,
+            h: (z.maxRow - z.minRow + 1) * 0.05,
+            fill: plantColorLight(z.plant),
+            stroke: plantColor(z.plant),
+          }));
+          if (zoneRects.length) zoneRectsMap.set(bed.id, zoneRects);
           const views = computeBedZoneViews(zoneInputs, cols, rows);
           views.forEach((v, idx) => {
             legend.push({ bedId: bed.id, bedName: bed.name, zoneId: plan.zones[idx].id, plantName: v.zone.plant.name, color: plantColor(v.zone.plant), count: v.spots.length });
@@ -923,6 +940,7 @@ export class GardenLayoutComponent implements OnInit {
         });
         this.bedPlants.set(plantsMap);
         this.bedSpots.set(spotsMap);
+        this.bedZoneRects.set(zoneRectsMap);
         this.bedZoneInputs.set(inputsMap);
         this.bedZonesList.set(legend);
       });

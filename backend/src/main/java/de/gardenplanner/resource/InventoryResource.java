@@ -50,6 +50,20 @@ public class InventoryResource {
         return InventoryItemDto.from(item);
     }
 
+    @POST
+    @Path("/{plantId}/bought")
+    @Transactional
+    public InventoryItemDto markBought(@PathParam("plantId") UUID plantId) {
+        User user = access.requireAuth();
+        InventoryItem item = InventoryItem.findByUserAndPlant(user.id, plantId);
+        if (item == null) throw new NotFoundException("Inventory item not found");
+        // The plants are already in the ground (that's why they were on the
+        // shopping list); buying them just clears the outstanding need.
+        item.toBuy = 0;
+        item.persist();
+        return InventoryItemDto.from(item);
+    }
+
     @DELETE
     @Path("/{plantId}")
     @Transactional

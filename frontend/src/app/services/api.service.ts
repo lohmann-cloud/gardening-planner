@@ -233,4 +233,8 @@ export class ApiService {
   removeInventory(plantId: string) {
     return this.http.delete(`${API}/inventory/${plantId}`);
   }
+
+  markBought(plantId: string) {
+    return this.http.post<InventoryItem>(`${API}/inventory/${plantId}/bought`, null);
+  }
 }

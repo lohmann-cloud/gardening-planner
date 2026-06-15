@@ -13,5 +13,6 @@
     <include file="db/changesets/V6__add_plant_icon_color.sql"/>
     <include file="db/changesets/V7__add_inventory.sql"/>
     <include file="db/changesets/V8__add_inventory_shopping.sql"/>
+    <include file="db/changesets/V9__add_sessions.sql"/>
 
 </databaseChangeLog>
