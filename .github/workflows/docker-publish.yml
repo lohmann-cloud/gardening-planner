@@ -29,8 +29,15 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
+      - name: Compute build metadata
+        id: meta_build
+        run: echo "time=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
+
       - name: Build Quarkus application
         working-directory: backend
+        env:
+          GIT_SHA: ${{ github.sha }}
+          BUILD_TIME: ${{ steps.meta_build.outputs.time }}
         run: ./gradlew build -x test --no-daemon
 
       - name: Set up Docker Buildx
@@ -92,12 +99,19 @@ jobs:
             type=raw,value=latest
             type=sha,format=long
 
+      - name: Compute build metadata
+        id: meta_build
+        run: echo "time=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
+
       - name: Build and push frontend image
         uses: docker/build-push-action@v6
         with:
           context: frontend
           file: frontend/Dockerfile
           push: true
+          build-args: |
+            GIT_SHA=${{ github.sha }}
+            BUILD_TIME=${{ steps.meta_build.outputs.time }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha,scope=frontend
