@@ -1,4 +1,4 @@
-import { Component, computed, effect, ElementRef, inject, OnInit, signal, ViewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, ElementRef, inject, OnInit, signal, ViewChild } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { forkJoin, from, of, concatMap, toArray, catchError } from 'rxjs';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
@@ -24,6 +24,7 @@ interface BedZoneRect { dx: number; dy: number; w: number; h: number; fill: stri
   imports: [FormField, RouterModule, DecimalPipe],
   templateUrl: './garden-layout.html',
   styleUrl: './garden-layout.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class GardenLayoutComponent implements OnInit {
   protected readonly Math = Math;
@@ -131,8 +132,13 @@ export class GardenLayoutComponent implements OnInit {
     return lines;
   });
 
-  private readonly GRID_ZOOM_THRESHOLD = 6;
-  protected readonly showCellGrid = computed(() => this.mode() === 'plant' && this.zoom() >= this.GRID_ZOOM_THRESHOLD);
+  /** Cell grid lines per bed, recomputed only when the garden changes (geometry is stable otherwise). */
+  protected readonly bedGridLinesMap = computed(() => {
+    const g = this.garden();
+    const map = new Map<string, { xs: number[]; ys: number[] }>();
+    if (g) for (const bed of g.beds) map.set(bed.id, this.computeBedGridLines(bed));
+    return map;
+  });
 
   private readonly bedModel = signal({ name: 'Beet', widthM: 2, lengthM: 1 });
   protected readonly bedForm = form(this.bedModel, (path) => {
@@ -1148,7 +1154,11 @@ export class GardenLayoutComponent implements OnInit {
     this.plantSel.set(null);
   }
 
-  protected bedGridLines(bed: GardenBed): { xs: number[]; ys: number[] } {
+  protected bedGridLinesFor(bedId: string): { xs: number[]; ys: number[] } {
+    return this.bedGridLinesMap().get(bedId) ?? { xs: [], ys: [] };
+  }
+
+  private computeBedGridLines(bed: GardenBed): { xs: number[]; ys: number[] } {
     const { cols, rows } = bedColsRows(bed);
     const xs: number[] = [];
     const ys: number[] = [];

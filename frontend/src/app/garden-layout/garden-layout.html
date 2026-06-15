@@ -330,19 +330,18 @@
                     pointer-events="none"
                   >{{ icons }}</text>
                 }
+                <!-- Plant positions are shown in every mode. -->
+                @for (s of bedSpotsFor(b.id); track $index) {
+                  <text [attr.x]="s.x" [attr.y]="s.y" text-anchor="middle" dominant-baseline="central"
+                        font-size="0.05" pointer-events="none">{{ s.icon }}</text>
+                }
                 @if (mode() === 'plant') {
-                  @if (showCellGrid()) {
-                    @let grid = bedGridLines(b);
-                    @for (gx of grid.xs; track gx) {
-                      <line [attr.x1]="gx" [attr.y1]="b.yM" [attr.x2]="gx" [attr.y2]="b.yM + b.lengthM" stroke="#466838" stroke-width="0.004" opacity="0.25" pointer-events="none" />
-                    }
-                    @for (gy of grid.ys; track gy) {
-                      <line [attr.x1]="b.xM" [attr.y1]="gy" [attr.x2]="b.xM + b.widthM" [attr.y2]="gy" stroke="#466838" stroke-width="0.004" opacity="0.25" pointer-events="none" />
-                    }
+                  @let grid = bedGridLinesFor(b.id);
+                  @for (gx of grid.xs; track gx) {
+                    <line [attr.x1]="gx" [attr.y1]="b.yM" [attr.x2]="gx" [attr.y2]="b.yM + b.lengthM" stroke="#466838" stroke-width="0.004" opacity="0.25" pointer-events="none" />
                   }
-                  @for (s of bedSpotsFor(b.id); track $index) {
-                    <text [attr.x]="s.x" [attr.y]="s.y" text-anchor="middle" dominant-baseline="central"
-                          font-size="0.05" pointer-events="none">{{ s.icon }}</text>
+                  @for (gy of grid.ys; track gy) {
+                    <line [attr.x1]="b.xM" [attr.y1]="gy" [attr.x2]="b.xM + b.widthM" [attr.y2]="gy" stroke="#466838" stroke-width="0.004" opacity="0.25" pointer-events="none" />
                   }
                   @if (plantSel(); as ps) {
                     @if (ps.bedId === b.id) {
