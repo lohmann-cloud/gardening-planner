@@ -60,12 +60,52 @@
     cursor: grabbing;
   }
 
+  &.navigate-mode {
+    cursor: grab;
+  }
+  &.navigate-mode.is-panning {
+    cursor: grabbing;
+  }
+
   &.placement-mode {
     cursor: crosshair;
   }
 
-  &.plant-mode {
+  &.draw-mode {
     cursor: crosshair;
+  }
+}
+
+.tool-rail {
+  .rail-btn {
+    width: 2.5rem;
+    height: 2.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    line-height: 1;
+    border-radius: 0.6rem;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.15s ease, box-shadow 0.15s ease;
+
+    &:hover {
+      background: var(--color-cream-100);
+    }
+
+    &.active {
+      background: white;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+      outline: 2px solid var(--color-leaf-600);
+    }
+  }
+
+  .rail-divider {
+    height: 1px;
+    margin: 0.15rem 0.3rem;
+    background: var(--color-cream-200);
   }
 }
 

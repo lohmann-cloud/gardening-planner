@@ -10,13 +10,16 @@ import { planInventory, AutoPlantBed, AutoPlantItem, AutoPlantResult } from '../
 import { bedColsRows, cellTopLeftMeters, bedCellAtPoint } from '../planning/bed-coords';
 import { computeBedZoneViews, ZoneInput } from '../planning/bed-zone-views';
 import { CELL_CM } from '../planning/plant-grid';
+import { ZoneCells, moveZone, zonesOverlap } from '../planning/zone-edit';
 
-type Tool = 'select' | 'bed' | 'obstacle';
+type Tool = 'navigate' | 'bed' | 'obstacle' | 'plant' | 'edit';
 
 /** Minimal pointer shape shared by MouseEvent and Touch so handlers serve both. */
 type Ptr = { clientX: number; clientY: number; target: EventTarget | null; button?: number };
 
 interface BedPlantSpot { x: number; y: number; color: string; icon: string; }
+/** A bed's zone geometry plus its plant, kept in plan order alongside the legend. */
+interface BedZoneInput extends ZoneInput { plant: Plant; }
 /** A planted zone's rectangle, offset from the bed origin in metres. */
 interface BedZoneRect { dx: number; dy: number; w: number; h: number; fill: string; stroke: string; }
 
@@ -38,7 +41,7 @@ export class GardenLayoutComponent implements OnInit {
   private readonly router = inject(Router);
 
   protected readonly garden = signal<Garden | null>(null);
-  protected readonly tool = signal<Tool>('select');
+  protected readonly tool = signal<Tool>('navigate');
   protected readonly toolbarOpen = signal(false);
   protected readonly mode = signal<'beds' | 'plant'>('beds');
   protected readonly plants = signal<Plant[]>([]);
@@ -55,7 +58,7 @@ export class GardenLayoutComponent implements OnInit {
   /** Per bed id: the coloured rectangle of each planted zone (only the planted area, not the whole bed). */
   protected readonly bedZoneRects = signal<Map<string, BedZoneRect[]>>(new Map());
   /** Per bed id: the zone inputs (geometry + spacing) of its existing zones, in plan order. */
-  protected readonly bedZoneInputs = signal<Map<string, ZoneInput[]>>(new Map());
+  protected readonly bedZoneInputs = signal<Map<string, BedZoneInput[]>>(new Map());
   protected readonly autoPlantOpen = signal(false);
   protected readonly autoPlantItems = signal<{ item: InventoryItem; plant: Plant; selected: boolean }[]>([]);
   protected readonly minSpacingPct = signal(100);
@@ -77,6 +80,16 @@ export class GardenLayoutComponent implements OnInit {
   private plantDrawBedId: string | null = null;
   private plantAnchorCell: { col: number; row: number } | null = null;
   protected readonly plantSel = signal<{ bedId: string; minCol: number; minRow: number; maxCol: number; maxRow: number } | null>(null);
+
+  // Existing-zone editing (plant mode, edit tool)
+  protected readonly selectedZone = signal<{ bedId: string; zoneId: string } | null>(null);
+  private zoneDragStart: { col: number; row: number; zone: ZoneCells; bedId: string } | null = null;
+  protected readonly zoneDragOffset = signal<{ dCol: number; dRow: number } | null>(null);
+  protected readonly selectedZoneInfo = computed(() => {
+    const sel = this.selectedZone();
+    if (!sel) return null;
+    return this.bedZonesList().find((z) => z.zoneId === sel.zoneId && z.bedId === sel.bedId) ?? null;
+  });
 
   protected readonly selectedBed = signal<GardenBed | null>(null);
   protected readonly selectedObstacle = signal<Obstacle | null>(null);
@@ -109,6 +122,11 @@ export class GardenLayoutComponent implements OnInit {
   private readonly dragOffset = signal<{ dx: number; dy: number } | null>(null);
   protected readonly dragPos = signal<{ x: number; y: number } | null>(null);
   private lastValidDragPos = signal<{ x: number; y: number } | null>(null);
+
+  // Obstacle drag
+  protected readonly draggedObstacle = signal<Obstacle | null>(null);
+  private readonly obsDragOffset = signal<{ dx: number; dy: number } | null>(null);
+  protected readonly obsDragPos = signal<{ x: number; y: number } | null>(null);
 
   // Bed rotation
   protected readonly rotatingBed = signal<GardenBed | null>(null);
@@ -213,14 +231,41 @@ export class GardenLayoutComponent implements OnInit {
 
   protected onCanvasMouseDown(event: Ptr) {
     if ((event.button ?? 0) !== 0) return;
-    if (this.mode() === 'plant') { if (this.plantPointDown(event)) return; }
+    if (this.mode() === 'plant' && this.tool() === 'plant') { if (this.plantPointDown(event)) return; }
     this.panMoved = false;
     this.isPanning.set(true);
     this.panningStart = { clientX: event.clientX, clientY: event.clientY, panX: this.panX(), panY: this.panY() };
   }
 
   protected onCanvasMove(event: Ptr) {
-    if (this.mode() === 'plant' && this.plantDrawBedId) { this.plantPointMove(event); return; }
+    if (this.mode() === 'plant' && this.tool() === 'plant' && this.plantDrawBedId) { this.plantPointMove(event); return; }
+
+    // Existing-zone drag (plant mode, edit tool)
+    if (this.zoneDragStart) {
+      const bed = this.bedById(this.zoneDragStart.bedId);
+      const pt = this.svgPoint(event);
+      if (!bed || !pt) return;
+      const { cols, rows } = bedColsRows(bed);
+      const cell = bedCellAtPoint(pt, bed) ?? this.nearestCell(pt, bed, cols, rows);
+      this.zoneDragOffset.set({ dCol: cell.col - this.zoneDragStart.col, dRow: cell.row - this.zoneDragStart.row });
+      return;
+    }
+
+    // Obstacle drag
+    const draggingObs = this.draggedObstacle();
+    if (draggingObs) {
+      const pt = this.svgPoint(event);
+      if (!pt) return;
+      const offset = this.obsDragOffset()!;
+      const g = this.garden()!;
+      let x = this.snap(pt.x - offset.dx);
+      let y = this.snap(pt.y - offset.dy);
+      x = Math.max(0, Math.min(x, g.widthM - draggingObs.widthM));
+      y = Math.max(0, Math.min(y, g.lengthM - draggingObs.lengthM));
+      this.obsDragPos.set({ x, y });
+      return;
+    }
+
     // Rotation
     const rotating = this.rotatingBed();
     if (rotating) {
@@ -271,8 +316,7 @@ export class GardenLayoutComponent implements OnInit {
   }
 
   private updateGhost(event: Ptr) {
-    if (this.mode() !== 'beds') { this.ghost.set(null); return; }
-    if (this.tool() === 'select' || !this.garden()) {
+    if ((this.tool() !== 'bed' && this.tool() !== 'obstacle') || !this.garden()) {
       this.ghost.set(null);
       return;
     }
@@ -289,7 +333,58 @@ export class GardenLayoutComponent implements OnInit {
   }
 
   protected onCanvasMouseUp(event: Ptr) {
-    if (this.mode() === 'plant' && this.plantDrawBedId) { this.plantPointUp(); return; }
+    if (this.mode() === 'plant' && this.tool() === 'plant' && this.plantDrawBedId) { this.plantPointUp(); return; }
+
+    // Existing-zone drag end → move via remove + re-add (no zone-update API)
+    if (this.zoneDragStart) {
+      const start = this.zoneDragStart;
+      const off = this.zoneDragOffset();
+      this.zoneDragStart = null;
+      this.zoneDragOffset.set(null);
+      const g = this.garden();
+      const bed = this.bedById(start.bedId);
+      if (!g || !bed || !off || (off.dCol === 0 && off.dRow === 0)) return;
+      const { cols, rows } = bedColsRows(bed);
+      const moved = moveZone(start.zone, off.dCol, off.dRow, cols, rows);
+      const perBed = this.bedZonesList().filter((l) => l.bedId === start.bedId);
+      const idx = perBed.findIndex((l) => l.zoneId === this.selectedZone()?.zoneId);
+      const inputs = this.bedZoneInputs().get(start.bedId) ?? [];
+      const others = inputs.filter((_, i) => i !== idx);
+      if (others.some((o) => zonesOverlap(moved, o))) return; // illegal move: snap back on next render
+      const zi = inputs[idx];
+      const zoneId = this.selectedZone()?.zoneId;
+      if (!zi || !zoneId) return;
+      const year = new Date().getFullYear();
+      const views = computeBedZoneViews(
+        [{ ...moved, spacingFactor: zi.spacingFactor, spacingCm: zi.spacingCm, rowSpacingCm: zi.rowSpacingCm }],
+        cols, rows);
+      const plantCount = views[0]?.spots.length ?? 0;
+      this.api.removePlantingZone(g.id, start.bedId, year, zoneId).subscribe(() => {
+        this.api.addPlantingZone(g.id, start.bedId, year, {
+          plantId: zi.plant.id, minCol: moved.minCol, minRow: moved.minRow, maxCol: moved.maxCol, maxRow: moved.maxRow,
+          spacingFactor: zi.spacingFactor, plantCount,
+        }).subscribe(() => { this.selectedZone.set(null); this.loadGarden(g.id); });
+      });
+      return;
+    }
+
+    // Obstacle drag end
+    const obs = this.draggedObstacle();
+    const obsPos = this.obsDragPos();
+    const gObs = this.garden();
+    if (obs && obsPos && gObs) {
+      this.draggedObstacle.set(null);
+      this.obsDragOffset.set(null);
+      this.obsDragPos.set(null);
+      if (obsPos.x !== obs.xM || obsPos.y !== obs.yM) {
+        this.api.updateObstacle(gObs.id, obs.id, { xM: obsPos.x, yM: obsPos.y }).subscribe((updated) => {
+          this.selectedObstacle.set(updated);
+          this.loadGarden(gObs.id);
+        });
+      }
+      return;
+    }
+
     // Rotation end
     const rotating = this.rotatingBed();
     if (rotating) {
@@ -335,10 +430,10 @@ export class GardenLayoutComponent implements OnInit {
   }
 
   private handleBackgroundClick(event: Ptr) {
-    if (this.mode() !== 'beds') return;
     const g = this.garden();
-    if (this.tool() === 'select') {
+    if (this.tool() === 'navigate' || this.tool() === 'edit') {
       this.clearSelection();
+      this.selectedZone.set(null);
       return;
     }
     const gh = this.ghost();
@@ -372,13 +467,13 @@ export class GardenLayoutComponent implements OnInit {
   }
 
   protected onBedMouseDown(bed: GardenBed, event: MouseEvent) {
-    if (this.mode() === 'plant') return;
+    if (this.tool() !== 'edit') return;
     event.stopPropagation();
     this.startBedDrag(bed, event);
   }
 
   private startBedDrag(bed: GardenBed, p: Ptr) {
-    if (this.tool() !== 'select') return;
+    if (this.tool() !== 'edit') return;
     this.selectedBed.set(bed);
     this.selectedObstacle.set(null);
     this.editingBed.set(false);
@@ -392,21 +487,27 @@ export class GardenLayoutComponent implements OnInit {
   }
 
   protected onObstacleMouseDown(obstacle: Obstacle, event: MouseEvent) {
-    if (this.mode() === 'plant') return;
+    if (this.tool() !== 'edit') return;
     event.stopPropagation();
-    this.selectObstacleCore(obstacle);
+    this.selectObstacleCore(obstacle, event);
   }
 
-  private selectObstacleCore(obstacle: Obstacle) {
-    if (this.tool() !== 'select') return;
+  private selectObstacleCore(obstacle: Obstacle, p?: Ptr) {
+    if (this.tool() !== 'edit') return;
     this.selectedObstacle.set(obstacle);
     this.selectedBed.set(null);
     this.editingBed.set(false);
     this.toolbarOpen.set(true);
+    if (!p) return;
+    const pt = this.svgPoint(p);
+    if (!pt) return;
+    this.draggedObstacle.set(obstacle);
+    this.obsDragOffset.set({ dx: pt.x - obstacle.xM, dy: pt.y - obstacle.yM });
+    this.obsDragPos.set({ x: obstacle.xM, y: obstacle.yM });
   }
 
   protected onRotateHandleMouseDown(bed: GardenBed, event: MouseEvent) {
-    if (this.mode() === 'plant') return;
+    if (this.tool() !== 'edit') return;
     event.stopPropagation();
     this.startRotate(bed, event);
   }
@@ -431,6 +532,11 @@ export class GardenLayoutComponent implements OnInit {
     this.rotatingBed.set(null);
     this.rotationStartAngle.set(0);
     this.rotationBedStart.set(0);
+    this.draggedObstacle.set(null);
+    this.obsDragOffset.set(null);
+    this.obsDragPos.set(null);
+    this.zoneDragStart = null;
+    this.zoneDragOffset.set(null);
     this.isPanning.set(false);
     this.panningStart = null;
     // End any in-progress draw, but KEEP plantSel — a pending selection awaiting
@@ -440,7 +546,7 @@ export class GardenLayoutComponent implements OnInit {
   }
 
   protected selectObstacle(obstacle: Obstacle) {
-    if (this.tool() !== 'select') return;
+    if (this.tool() !== 'edit') return;
     this.selectedObstacle.set(obstacle);
     this.selectedBed.set(null);
     this.editingBed.set(false);
@@ -615,7 +721,7 @@ export class GardenLayoutComponent implements OnInit {
       event.preventDefault();
       return;
     }
-    if (this.mode() === 'plant') {
+    if (this.mode() === 'plant' && this.tool() === 'plant') {
       const t = event.touches[0];
       this.onCanvasMouseDown({ clientX: t.clientX, clientY: t.clientY, target: t.target, button: 0 });
       event.preventDefault();
@@ -627,16 +733,19 @@ export class GardenLayoutComponent implements OnInit {
     const handle = el?.closest?.('[data-rotate-handle]');
     const bedG = el?.closest?.('[data-bed-id]');
     const obsG = el?.closest?.('[data-obstacle-id]');
+    const zoneEl = el?.closest?.('[data-zone-id]');
     const ptr: Ptr = { clientX: t.clientX, clientY: t.clientY, target: t.target, button: 0 };
     if (handle && this.selectedBed()) {
       this.startRotate(this.selectedBed()!, ptr);
-    } else if (bedG && this.tool() === 'select') {
+    } else if (zoneEl && this.mode() === 'plant' && this.tool() === 'edit') {
+      this.zonePointDown(zoneEl.getAttribute('data-zone-bed')!, zoneEl.getAttribute('data-zone-id')!, ptr);
+    } else if (bedG && this.tool() === 'edit') {
       const bed = this.garden()?.beds.find((b) => b.id === bedG.getAttribute('data-bed-id'));
       if (bed) this.startBedDrag(bed, ptr);
-    } else if (obsG && this.tool() === 'select') {
+    } else if (obsG && this.tool() === 'edit') {
       const obs = this.garden()?.obstacles.find((o) => o.id === obsG.getAttribute('data-obstacle-id'));
-      if (obs) this.selectObstacleCore(obs);
-    } else if (this.tool() === 'select') {
+      if (obs) this.selectObstacleCore(obs, ptr);
+    } else if (this.tool() === 'navigate' || this.tool() === 'edit') {
       this.onCanvasMouseDown(ptr);
     } else {
       this.updateGhost(ptr);
@@ -653,7 +762,7 @@ export class GardenLayoutComponent implements OnInit {
     if (event.touches.length !== 1) return;
     const t = event.touches[0];
     const ptr: Ptr = { clientX: t.clientX, clientY: t.clientY, target: t.target };
-    if (this.tool() !== 'select' && !this.draggedBed() && !this.rotatingBed() && !this.isPanning()) {
+    if ((this.tool() === 'bed' || this.tool() === 'obstacle') && !this.draggedBed() && !this.rotatingBed() && !this.isPanning()) {
       this.updateGhost(ptr);
     } else {
       this.onCanvasMove(ptr);
@@ -670,7 +779,7 @@ export class GardenLayoutComponent implements OnInit {
     const t = event.changedTouches[0];
     if (!t) { this.cancelDrag(); return; }
     const ptr: Ptr = { clientX: t.clientX, clientY: t.clientY, target: t.target, button: 0 };
-    if (this.tool() !== 'select' && this.ghost()) {
+    if ((this.tool() === 'bed' || this.tool() === 'obstacle') && this.ghost()) {
       this.handleBackgroundClick(ptr);
       this.ghost.set(null);
     } else {
@@ -772,7 +881,18 @@ export class GardenLayoutComponent implements OnInit {
   protected enterMode(m: 'beds' | 'plant') {
     this.mode.set(m);
     this.cancelPlantSelection();
-    this.toolbarOpen.set(m === 'plant'); // auto-open the picker drawer on entering plant mode
+    this.clearSelection();
+    this.selectTool('navigate');
+  }
+
+  /** Switch the active tool; closes transient state and toggles the mobile drawer. */
+  protected selectTool(t: Tool) {
+    this.tool.set(t);
+    this.cancelPlantSelection();
+    if (t !== 'edit') this.clearSelection();
+    this.selectedZone.set(null);
+    // open the picker/details drawer only where it's needed
+    this.toolbarOpen.set(this.mode() === 'plant' && (t === 'plant' || t === 'edit'));
   }
 
   protected setPlantTab(tab: 'plants' | 'inventory') {
@@ -889,7 +1009,7 @@ export class GardenLayoutComponent implements OnInit {
       forkJoin(planRequests).subscribe((plans) => {
         const spotsMap = new Map<string, BedPlantSpot[]>();
         const zoneRectsMap = new Map<string, BedZoneRect[]>();
-        const inputsMap = new Map<string, ZoneInput[]>();
+        const inputsMap = new Map<string, BedZoneInput[]>();
         const legend: { bedId: string; bedName: string; zoneId: string; plantName: string; color: string; count: number }[] = [];
         plans.forEach((plan, i) => {
           const bed = g.beds[i];
@@ -953,6 +1073,7 @@ export class GardenLayoutComponent implements OnInit {
     this.selectedBed.set(null);
     this.selectedObstacle.set(null);
     this.editingBed.set(false);
+    this.selectedZone.set(null);
   }
 
   private snapToOtherBeds(x: number, y: number, bed: GardenBed, others: GardenBed[]): { x: number; y: number } {
@@ -1185,6 +1306,77 @@ export class GardenLayoutComponent implements OnInit {
     const g = this.garden();
     if (!g) return;
     this.api.removePlantingZone(g.id, bedId, new Date().getFullYear(), zoneId).subscribe(() => this.loadGarden(g.id));
+  }
+
+  // ─── Existing-zone editing (plant mode, edit tool) ──────────────────────────
+
+  /** Pair each bed's zone rectangle with its zoneId (bedZoneRects and the per-bed
+   *  legend share plan order). */
+  protected zonesForBed(bedId: string): { zoneId: string; rect: BedZoneRect }[] {
+    const rects = this.bedZoneRects().get(bedId) ?? [];
+    const legend = this.bedZonesList().filter((l) => l.bedId === bedId);
+    return rects.map((rect, i) => ({ zoneId: legend[i]?.zoneId ?? String(i), rect }));
+  }
+
+  protected selectZone(bedId: string, zoneId: string) {
+    if (this.tool() !== 'edit' || this.mode() !== 'plant') return;
+    this.selectedZone.set({ bedId, zoneId });
+    this.toolbarOpen.set(true);
+  }
+
+  /** Resolve the BedZoneInput for the selected zone (bedZoneInputs and the per-bed
+   *  legend share plan order, so match by index within the bed). */
+  private selectedZoneInput(): BedZoneInput | null {
+    const sel = this.selectedZone();
+    if (!sel) return null;
+    const perBed = this.bedZonesList().filter((l) => l.bedId === sel.bedId);
+    const idx = perBed.findIndex((l) => l.zoneId === sel.zoneId);
+    return (this.bedZoneInputs().get(sel.bedId) ?? [])[idx] ?? null;
+  }
+
+  /** Begin dragging an existing zone (records the grabbed cell + current bounds). */
+  protected zonePointDown(bedId: string, zoneId: string, p: Ptr) {
+    this.selectZone(bedId, zoneId);
+    const bed = this.bedById(bedId);
+    const pt = this.svgPoint(p);
+    if (!bed || !pt) return;
+    const { cols, rows } = bedColsRows(bed);
+    const cell = bedCellAtPoint(pt, bed) ?? this.nearestCell(pt, bed, cols, rows);
+    const zi = this.selectedZoneInput();
+    if (!zi) return;
+    this.zoneDragStart = { col: cell.col, row: cell.row, bedId,
+      zone: { minCol: zi.minCol, minRow: zi.minRow, maxCol: zi.maxCol, maxRow: zi.maxRow } };
+    this.zoneDragOffset.set({ dCol: 0, dRow: 0 });
+  }
+
+  /** Re-create the selected zone with a new spacing factor (no zone-update API). */
+  protected updateSelectedZoneSpacing(pct: number) {
+    const sel = this.selectedZone();
+    const g = this.garden();
+    const z = this.selectedZoneInput();
+    const bed = g?.beds.find((b) => b.id === sel?.bedId);
+    if (!sel || !g || !z || !bed) return;
+    const year = new Date().getFullYear();
+    const factor = pct / 100;
+    const { cols, rows } = bedColsRows(bed);
+    const views = computeBedZoneViews(
+      [{ minCol: z.minCol, minRow: z.minRow, maxCol: z.maxCol, maxRow: z.maxRow,
+         spacingFactor: factor, spacingCm: z.spacingCm, rowSpacingCm: z.rowSpacingCm }],
+      cols, rows);
+    const plantCount = views[0]?.spots.length ?? 0;
+    this.api.removePlantingZone(g.id, sel.bedId, year, sel.zoneId).subscribe(() => {
+      this.api.addPlantingZone(g.id, sel.bedId, year, {
+        plantId: z.plant.id, minCol: z.minCol, minRow: z.minRow, maxCol: z.maxCol, maxRow: z.maxRow,
+        spacingFactor: factor, plantCount,
+      }).subscribe(() => { this.selectedZone.set(null); this.loadGarden(g.id); });
+    });
+  }
+
+  protected deleteSelectedZone() {
+    const sel = this.selectedZone();
+    if (!sel) return;
+    this.selectedZone.set(null);
+    this.removeZoneById(sel.bedId, sel.zoneId);
   }
 
   private snap(val: number): number {
