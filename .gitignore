@@ -59,3 +59,6 @@ test-output
 
 # Prisma generated client
 libs/database/src/generated/
+
+# Superpowers brainstorming mockups
+.superpowers/
