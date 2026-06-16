@@ -336,29 +336,6 @@
                       stroke-width="0.04" stroke-dasharray="0.1 0.05"
                       rx="0.02"
                       (mousedown)="$event.stopPropagation(); zonePointDown(b.id, zl.zoneId, $event)" />
-                    @if (sel) {
-                      @let zx = bx + zl.rect.dx + dxM;
-                      @let zy = by + zl.rect.dy + dyM;
-                      @let zw = zl.rect.w;
-                      @let zh = zl.rect.h;
-                      <rect class="zone-edge ew" data-zone-edge="left" [attr.data-zone-id]="zl.zoneId" [attr.data-zone-bed]="b.id"
-                            [attr.x]="zx - 0.03" [attr.y]="zy" width="0.06" [attr.height]="zh" fill="#cf6629" opacity="0.5"
-                            (mousedown)="$event.stopPropagation(); zoneEdgeDown(b.id, zl.zoneId, 'left', $event)" />
-                      <rect class="zone-edge ew" data-zone-edge="right" [attr.data-zone-id]="zl.zoneId" [attr.data-zone-bed]="b.id"
-                            [attr.x]="zx + zw - 0.03" [attr.y]="zy" width="0.06" [attr.height]="zh" fill="#cf6629" opacity="0.5"
-                            (mousedown)="$event.stopPropagation(); zoneEdgeDown(b.id, zl.zoneId, 'right', $event)" />
-                      <rect class="zone-edge ns" data-zone-edge="top" [attr.data-zone-id]="zl.zoneId" [attr.data-zone-bed]="b.id"
-                            [attr.x]="zx" [attr.y]="zy - 0.03" [attr.width]="zw" height="0.06" fill="#cf6629" opacity="0.5"
-                            (mousedown)="$event.stopPropagation(); zoneEdgeDown(b.id, zl.zoneId, 'top', $event)" />
-                      <rect class="zone-edge ns" data-zone-edge="bottom" [attr.data-zone-id]="zl.zoneId" [attr.data-zone-bed]="b.id"
-                            [attr.x]="zx" [attr.y]="zy + zh - 0.03" [attr.width]="zw" height="0.06" fill="#cf6629" opacity="0.5"
-                            (mousedown)="$event.stopPropagation(); zoneEdgeDown(b.id, zl.zoneId, 'bottom', $event)" />
-                      @if (zoneResizeBounds(); as rb) {
-                        <rect [attr.x]="bx + rb.minCol * 0.05" [attr.y]="by + rb.minRow * 0.05"
-                              [attr.width]="(rb.maxCol - rb.minCol + 1) * 0.05" [attr.height]="(rb.maxRow - rb.minRow + 1) * 0.05"
-                              fill="rgba(207,102,41,0.18)" stroke="#cf6629" stroke-width="0.02" pointer-events="none" rx="0.02" />
-                      }
-                    }
                   }
                 }
                 <text

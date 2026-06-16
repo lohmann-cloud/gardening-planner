@@ -124,8 +124,3 @@
 .rotate-handle {
   cursor: crosshair;
 }
-
-.zone-edge {
-  &.ew { cursor: ew-resize; }
-  &.ns { cursor: ns-resize; }
-}

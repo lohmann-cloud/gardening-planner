@@ -10,7 +10,7 @@ import { planInventory, AutoPlantBed, AutoPlantItem, AutoPlantResult } from '../
 import { bedColsRows, cellTopLeftMeters, bedCellAtPoint } from '../planning/bed-coords';
 import { computeBedZoneViews, ZoneInput } from '../planning/bed-zone-views';
 import { CELL_CM } from '../planning/plant-grid';
-import { ZoneCells, ZoneEdge, moveZone, resizeZoneEdge, zonesOverlap } from '../planning/zone-edit';
+import { ZoneCells, moveZone, zonesOverlap } from '../planning/zone-edit';
 
 type Tool = 'navigate' | 'bed' | 'obstacle' | 'plant' | 'edit';
 
@@ -85,8 +85,6 @@ export class GardenLayoutComponent implements OnInit {
   protected readonly selectedZone = signal<{ bedId: string; zoneId: string } | null>(null);
   private zoneDragStart: { col: number; row: number; zone: ZoneCells; bedId: string } | null = null;
   protected readonly zoneDragOffset = signal<{ dCol: number; dRow: number } | null>(null);
-  private zoneResizeStart: { edge: ZoneEdge; orig: ZoneCells; bedId: string; zoneId: string } | null = null;
-  protected readonly zoneResizeBounds = signal<ZoneCells | null>(null);
   protected readonly selectedZoneInfo = computed(() => {
     const sel = this.selectedZone();
     if (!sel) return null;
@@ -242,19 +240,6 @@ export class GardenLayoutComponent implements OnInit {
   protected onCanvasMove(event: Ptr) {
     if (this.mode() === 'plant' && this.tool() === 'plant' && this.plantDrawBedId) { this.plantPointMove(event); return; }
 
-    // Existing-zone resize via edge handle (plant mode, edit tool)
-    if (this.zoneResizeStart) {
-      const rs = this.zoneResizeStart;
-      const bed = this.bedById(rs.bedId);
-      const pt = this.svgPoint(event);
-      if (!bed || !pt) return;
-      const { cols, rows } = bedColsRows(bed);
-      const cell = bedCellAtPoint(pt, bed) ?? this.nearestCell(pt, bed, cols, rows);
-      const toCell = (rs.edge === 'left' || rs.edge === 'right') ? cell.col : cell.row;
-      this.zoneResizeBounds.set(resizeZoneEdge(rs.orig, rs.edge, toCell, cols, rows));
-      return;
-    }
-
     // Existing-zone drag (plant mode, edit tool)
     if (this.zoneDragStart) {
       const bed = this.bedById(this.zoneDragStart.bedId);
@@ -354,23 +339,32 @@ export class GardenLayoutComponent implements OnInit {
     if (this.zoneDragStart) {
       const start = this.zoneDragStart;
       const off = this.zoneDragOffset();
-      const zoneId = this.selectedZone()?.zoneId;
       this.zoneDragStart = null;
       this.zoneDragOffset.set(null);
+      const g = this.garden();
       const bed = this.bedById(start.bedId);
-      if (!bed || !off || !zoneId || (off.dCol === 0 && off.dRow === 0)) return;
+      if (!g || !bed || !off || (off.dCol === 0 && off.dRow === 0)) return;
       const { cols, rows } = bedColsRows(bed);
-      this.commitZoneBounds(start.bedId, zoneId, moveZone(start.zone, off.dCol, off.dRow, cols, rows));
-      return;
-    }
-
-    // Existing-zone resize end → commit new bounds
-    if (this.zoneResizeStart) {
-      const rs = this.zoneResizeStart;
-      const bounds = this.zoneResizeBounds();
-      this.zoneResizeStart = null;
-      this.zoneResizeBounds.set(null);
-      if (bounds) this.commitZoneBounds(rs.bedId, rs.zoneId, bounds);
+      const moved = moveZone(start.zone, off.dCol, off.dRow, cols, rows);
+      const perBed = this.bedZonesList().filter((l) => l.bedId === start.bedId);
+      const idx = perBed.findIndex((l) => l.zoneId === this.selectedZone()?.zoneId);
+      const inputs = this.bedZoneInputs().get(start.bedId) ?? [];
+      const others = inputs.filter((_, i) => i !== idx);
+      if (others.some((o) => zonesOverlap(moved, o))) return; // illegal move: snap back on next render
+      const zi = inputs[idx];
+      const zoneId = this.selectedZone()?.zoneId;
+      if (!zi || !zoneId) return;
+      const year = new Date().getFullYear();
+      const views = computeBedZoneViews(
+        [{ ...moved, spacingFactor: zi.spacingFactor, spacingCm: zi.spacingCm, rowSpacingCm: zi.rowSpacingCm }],
+        cols, rows);
+      const plantCount = views[0]?.spots.length ?? 0;
+      this.api.removePlantingZone(g.id, start.bedId, year, zoneId).subscribe(() => {
+        this.api.addPlantingZone(g.id, start.bedId, year, {
+          plantId: zi.plant.id, minCol: moved.minCol, minRow: moved.minRow, maxCol: moved.maxCol, maxRow: moved.maxRow,
+          spacingFactor: zi.spacingFactor, plantCount,
+        }).subscribe(() => { this.selectedZone.set(null); this.loadGarden(g.id); });
+      });
       return;
     }
 
@@ -543,8 +537,6 @@ export class GardenLayoutComponent implements OnInit {
     this.obsDragPos.set(null);
     this.zoneDragStart = null;
     this.zoneDragOffset.set(null);
-    this.zoneResizeStart = null;
-    this.zoneResizeBounds.set(null);
     this.isPanning.set(false);
     this.panningStart = null;
     // End any in-progress draw, but KEEP plantSel — a pending selection awaiting
@@ -741,14 +733,10 @@ export class GardenLayoutComponent implements OnInit {
     const handle = el?.closest?.('[data-rotate-handle]');
     const bedG = el?.closest?.('[data-bed-id]');
     const obsG = el?.closest?.('[data-obstacle-id]');
-    const edgeEl = el?.closest?.('[data-zone-edge]');
     const zoneEl = el?.closest?.('[data-zone-id]');
     const ptr: Ptr = { clientX: t.clientX, clientY: t.clientY, target: t.target, button: 0 };
     if (handle && this.selectedBed()) {
       this.startRotate(this.selectedBed()!, ptr);
-    } else if (edgeEl && this.mode() === 'plant' && this.tool() === 'edit') {
-      this.zoneEdgeDown(edgeEl.getAttribute('data-zone-bed')!, edgeEl.getAttribute('data-zone-id')!,
-        edgeEl.getAttribute('data-zone-edge') as ZoneEdge, ptr);
     } else if (zoneEl && this.mode() === 'plant' && this.tool() === 'edit') {
       this.zonePointDown(zoneEl.getAttribute('data-zone-bed')!, zoneEl.getAttribute('data-zone-id')!, ptr);
     } else if (bedG && this.mode() === 'beds' && this.tool() === 'edit') {
@@ -1359,44 +1347,6 @@ export class GardenLayoutComponent implements OnInit {
     this.zoneDragStart = { col: cell.col, row: cell.row, bedId,
       zone: { minCol: zi.minCol, minRow: zi.minRow, maxCol: zi.maxCol, maxRow: zi.maxRow } };
     this.zoneDragOffset.set({ dCol: 0, dRow: 0 });
-  }
-
-  /** Begin resizing the zone by dragging one of its edges. */
-  protected zoneEdgeDown(bedId: string, zoneId: string, edge: ZoneEdge, p: Ptr) {
-    this.selectZone(bedId, zoneId);
-    const zi = this.selectedZoneInput();
-    if (!zi) return;
-    const orig: ZoneCells = { minCol: zi.minCol, minRow: zi.minRow, maxCol: zi.maxCol, maxRow: zi.maxRow };
-    this.zoneResizeStart = { edge, orig, bedId, zoneId };
-    this.zoneResizeBounds.set(orig);
-  }
-
-  /** Persist new cell bounds for an existing zone via remove + re-add (no zone-update
-   *  API). No-op if unchanged or the new bounds overlap another zone in the bed. */
-  private commitZoneBounds(bedId: string, zoneId: string, bounds: ZoneCells) {
-    const g = this.garden();
-    const bed = this.bedById(bedId);
-    if (!g || !bed) return;
-    const inputs = this.bedZoneInputs().get(bedId) ?? [];
-    const perBed = this.bedZonesList().filter((l) => l.bedId === bedId);
-    const idx = perBed.findIndex((l) => l.zoneId === zoneId);
-    const zi = inputs[idx];
-    if (!zi) return;
-    if (bounds.minCol === zi.minCol && bounds.maxCol === zi.maxCol &&
-        bounds.minRow === zi.minRow && bounds.maxRow === zi.maxRow) return; // unchanged
-    if (inputs.some((o, i) => i !== idx && zonesOverlap(bounds, o))) return; // illegal: snap back
-    const { cols, rows } = bedColsRows(bed);
-    const year = new Date().getFullYear();
-    const views = computeBedZoneViews(
-      [{ ...bounds, spacingFactor: zi.spacingFactor, spacingCm: zi.spacingCm, rowSpacingCm: zi.rowSpacingCm }],
-      cols, rows);
-    const plantCount = views[0]?.spots.length ?? 0;
-    this.api.removePlantingZone(g.id, bedId, year, zoneId).subscribe(() => {
-      this.api.addPlantingZone(g.id, bedId, year, {
-        plantId: zi.plant.id, minCol: bounds.minCol, minRow: bounds.minRow, maxCol: bounds.maxCol, maxRow: bounds.maxRow,
-        spacingFactor: zi.spacingFactor, plantCount,
-      }).subscribe(() => { this.selectedZone.set(null); this.loadGarden(g.id); });
-    });
   }
 
   /** Re-create the selected zone with a new spacing factor (no zone-update API). */
