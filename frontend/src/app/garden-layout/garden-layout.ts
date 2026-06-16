@@ -467,13 +467,13 @@ export class GardenLayoutComponent implements OnInit {
   }
 
   protected onBedMouseDown(bed: GardenBed, event: MouseEvent) {
-    if (this.tool() !== 'edit') return;
+    if (this.mode() !== 'beds' || this.tool() !== 'edit') return;
     event.stopPropagation();
     this.startBedDrag(bed, event);
   }
 
   private startBedDrag(bed: GardenBed, p: Ptr) {
-    if (this.tool() !== 'edit') return;
+    if (this.mode() !== 'beds' || this.tool() !== 'edit') return;
     this.selectedBed.set(bed);
     this.selectedObstacle.set(null);
     this.editingBed.set(false);
@@ -487,13 +487,13 @@ export class GardenLayoutComponent implements OnInit {
   }
 
   protected onObstacleMouseDown(obstacle: Obstacle, event: MouseEvent) {
-    if (this.tool() !== 'edit') return;
+    if (this.mode() !== 'beds' || this.tool() !== 'edit') return;
     event.stopPropagation();
     this.selectObstacleCore(obstacle, event);
   }
 
   private selectObstacleCore(obstacle: Obstacle, p?: Ptr) {
-    if (this.tool() !== 'edit') return;
+    if (this.mode() !== 'beds' || this.tool() !== 'edit') return;
     this.selectedObstacle.set(obstacle);
     this.selectedBed.set(null);
     this.editingBed.set(false);
@@ -507,7 +507,7 @@ export class GardenLayoutComponent implements OnInit {
   }
 
   protected onRotateHandleMouseDown(bed: GardenBed, event: MouseEvent) {
-    if (this.tool() !== 'edit') return;
+    if (this.mode() !== 'beds' || this.tool() !== 'edit') return;
     event.stopPropagation();
     this.startRotate(bed, event);
   }
@@ -739,10 +739,10 @@ export class GardenLayoutComponent implements OnInit {
       this.startRotate(this.selectedBed()!, ptr);
     } else if (zoneEl && this.mode() === 'plant' && this.tool() === 'edit') {
       this.zonePointDown(zoneEl.getAttribute('data-zone-bed')!, zoneEl.getAttribute('data-zone-id')!, ptr);
-    } else if (bedG && this.tool() === 'edit') {
+    } else if (bedG && this.mode() === 'beds' && this.tool() === 'edit') {
       const bed = this.garden()?.beds.find((b) => b.id === bedG.getAttribute('data-bed-id'));
       if (bed) this.startBedDrag(bed, ptr);
-    } else if (obsG && this.tool() === 'edit') {
+    } else if (obsG && this.mode() === 'beds' && this.tool() === 'edit') {
       const obs = this.garden()?.obstacles.find((o) => o.id === obsG.getAttribute('data-obstacle-id'));
       if (obs) this.selectObstacleCore(obs, ptr);
     } else if (this.tool() === 'navigate' || this.tool() === 'edit') {
